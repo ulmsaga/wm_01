@@ -20,13 +20,14 @@ server:
 app:
   frontendBaseUrl: "http://localhost:5173"
   jwt:
-    secret: "wm_local_secret_change_me_32bytes_minimum_123456"
-    issuer: "wm"
+    issuer: wm
+    secret: wm-local-secret-please-make-it-longer-than-32bytes-123456  # 환경변수로 주입 권장
     accessMinutes: 30
     refreshDays: 30
-    cookieSecure: false
-    sameSite: "Lax"
+  cookie:
+    secure: false                 # 로컬은 false, 운영(https)은 true
+    sameSite: Lax               # 크로스사이트 요구 시 None(+Secure 필수) 고려
   kakao:
-    clientId: "${KAKAO_CLIENT_ID}"
-    redirectUri: "http://localhost:5173/auth/kakao/callback"
+    clientId: ${KAKAO_CLIENT_ID}
+    redirectUri: http://localhost:5173/auth/kakao/callback
 

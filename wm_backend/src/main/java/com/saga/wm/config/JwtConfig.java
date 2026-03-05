@@ -26,7 +26,7 @@ public class JwtConfig {
             // 로컬이면 false, 운영(https)이면 true로 바꾸기
             @Value("${app.jwt.cookieSecure:false}") boolean cookieSecure,
             @Value("${app.jwt.sameSite:Lax}") String sameSite) {
-        return new JwtCookieUtil(cookieSecure, sameSite, "/");
+        return new JwtCookieUtil(cookieSecure, sameSite);
     }
 
     // 필요하면 TTL도 Bean으로 제공

@@ -1,153 +1,136 @@
 package com.saga.wm.module.auth.jwt;
 
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
+import java.security.Key;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Map;
-import java.util.Objects;
+import java.util.UUID;
 
-import javax.crypto.SecretKey;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 
-/**
- * Access/Refresh JWT 발급 & 검증
- *
- * - Access: 짧게 (ex: 30분)
- * - Refresh: 길게 (ex: 30일) + DB에 해시 저장/회전(rotate) 권장
- *
- * Claims:
- *  - sub: kakaoUserId (String)
- *  - typ: "access" | "refresh"
- */
+@Component
 public class JwtProvider {
 
-    private static final String CLAIM_TYP = "typ";
-    private static final String TYP_ACCESS = "access";
+    public static final String CLAIM_TYP = "typ";   // access | refresh
+    public static final String CLAIM_JTI = "jti";   // UUID string
+    public static final String TYP_ACCESS = "access";
     public static final String TYP_REFRESH = "refresh";
 
-    private final SecretKey key;
     private final String issuer;
-    private final Duration accessTtl;
-    private final Duration refreshTtl;
+    private final Key key;
 
+    private final long accessMinutes;
+    private final long refreshDays;
 
-    public JwtProvider(String secret, String issuer, int accessMinutes, int refreshDays) {
-        Objects.requireNonNull(secret, "jwt secret must not be null");
-        if (secret.getBytes(StandardCharsets.UTF_8).length < 32) {
-            // HS256에서 안전하게 쓰려면 32바이트 이상을 강력 권장
-            throw new IllegalArgumentException("jwt secret must be at least 32 bytes for HS256");
+    public JwtProvider(
+            @Value("${app.jwt.issuer:wm}") String issuer,
+            @Value("${app.jwt.secret}") String secret,
+            @Value("${app.jwt.accessMinutes:30}") long accessMinutes,
+            @Value("${app.jwt.refreshDays:30}") long refreshDays
+    ) {
+        this.issuer = issuer;
+        this.accessMinutes = accessMinutes;
+        this.refreshDays = refreshDays;
+
+        // HS256
+        // byte[] secretBytes = secret.getBytes(StandardCharsets.UTF_8);
+        byte[] keyBytes = Decoders.BASE64.decode(secret);
+
+        if (keyBytes.length < 32) {
+            throw new IllegalArgumentException("JWT secret must be at least 32 bytes");
         }
-        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
-        this.issuer = (issuer == null || issuer.isBlank()) ? "wm" : issuer;
-        this.accessTtl = Duration.ofMinutes(accessMinutes);
-        this.refreshTtl = Duration.ofDays(refreshDays);
+
+        // this.key = new SecretKeySpec(secretBytes, SignatureAlgorithm.HS256.getJcaName());
+        this.key = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String createAccessToken(long kakaoUserId) {
-        return createToken(kakaoUserId, TYP_ACCESS, accessTtl, Map.of());
+    public TokenPair issueTokenPair(String userId, Map<String, Object> extraClaims) {
+        String accessJti = UUID.randomUUID().toString();
+        String refreshJti = UUID.randomUUID().toString();
+
+        String access = createToken(userId, TYP_ACCESS, accessJti, accessMinutes, ChronoUnit.MINUTES, extraClaims);
+        String refresh = createToken(userId, TYP_REFRESH, refreshJti, refreshDays, ChronoUnit.DAYS, Map.of());
+
+        return new TokenPair(access, refresh, accessJti, refreshJti,
+                Instant.now().plus(accessMinutes, ChronoUnit.MINUTES),
+                Instant.now().plus(refreshDays, ChronoUnit.DAYS));
     }
 
-    public String createRefreshToken(long kakaoUserId) {
-        // refresh는 추가로 "rot" 같은 토큰버전/nonce를 넣고 싶으면 여기서 claims에 넣으면 됨
-        return createToken(kakaoUserId, TYP_REFRESH, refreshTtl, Map.of());
-    }
-
-    private String createToken(long kakaoUserId, String typ, Duration ttl, Map<String, Object> extraClaims) {
+    private String createToken(
+            String sub,
+            String typ,
+            String jti,
+            long amount,
+            ChronoUnit unit,
+            Map<String, Object> extraClaims
+    ) {
         Instant now = Instant.now();
-        Instant exp = now.plus(ttl);
+        Instant exp = now.plus(amount, unit);
+
+        Claims claims = Jwts.claims()
+                .setIssuer(issuer)
+                .setSubject(sub)
+                .setIssuedAt(Date.from(now))
+                .setExpiration(Date.from(exp));
+
+        claims.put(CLAIM_TYP, typ);
+        claims.put(CLAIM_JTI, jti);
+
+        if (extraClaims != null) {
+            extraClaims.forEach((k, v) -> {
+                if (v != null) claims.put(k, v);
+            });
+        }
 
         return Jwts.builder()
-                .setIssuer(issuer)
-                .setSubject(Long.toString(kakaoUserId))
-                .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(exp))
-                .addClaims(extraClaims)
-                .claim(CLAIM_TYP, typ)
+                .setClaims(claims)
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    public boolean isValidAccessToken(String token) {
-        return isValidToken(token, TYP_ACCESS);
-    }
-
-    public boolean isValidRefreshToken(String token) {
-        return isValidToken(token, TYP_REFRESH);
-    }
-
-    /* private boolean isValidToken(String token, String expectedTyp) {
+    public Claims parseAndValidate(String token, String expectedTyp) {
         try {
-            Claims claims = parseClaims(token);
+            Claims claims = Jwts.parserBuilder()
+                    .requireIssuer(issuer)
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+
             String typ = claims.get(CLAIM_TYP, String.class);
-            return expectedTyp.equals(typ);
+            if (!expectedTyp.equals(typ)) {
+                throw new JwtException("Invalid token typ");
+            }
+            // exp/iat/iss/signature는 parser가 이미 검증
+            return claims;
         } catch (JwtException | IllegalArgumentException e) {
-            return false;
-        }
-    } */
-
-    private boolean isValidToken(String token, String expectedTyp) {
-        try {
-            Claims claims = parseClaims(token); // 여기서 서명/exp/iss 검증이 끝나야 함
-
-            // 1) typ 체크
-            String typ = claims.get(CLAIM_TYP, String.class);
-            if (typ == null || !expectedTyp.equals(typ)) return false;
-
-            // 2) subject 체크 (우리 구현에서 sub = kakaoUserId)
-            String sub = claims.getSubject();
-            if (sub == null || sub.isBlank()) return false;
-
-            // 숫자 형식 보장 (kakaoUserId가 long이라고 했으니)
-            Long.parseLong(sub);
-
-            // 3) (선택) audience 체크를 쓰고 있다면
-            // String aud = claims.getAudience();
-            // if (!"wm-frontend".equals(aud)) return false;
-
-            return true;
-        } catch (JwtException | IllegalArgumentException e) {
-            return false;
+            throw e;
         }
     }
 
-    public long getUserId(String token) {
-        Claims claims = parseClaims(token);
-        return Long.parseLong(claims.getSubject());
+    public String getSubject(Claims claims) {
+        return claims.getSubject();
     }
 
-    public Instant getExpiresAt(String token) {
-        Claims claims = parseClaims(token);
-        return claims.getExpiration().toInstant();
+    public String getJti(Claims claims) {
+        return claims.get(CLAIM_JTI, String.class);
     }
 
-    public boolean isExpired(String token) {
-        try {
-            parseClaims(token);
-            return false;
-        } catch (ExpiredJwtException e) {
-            return true;
-        }
-    }
-
-    public String getTokenType(String token) {
-        Claims claims = parseClaims(token);
-        return claims.get(CLAIM_TYP, String.class);
-    }
-
-    private Claims parseClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(key)
-                .requireIssuer(issuer)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
-    }
-    
+    public record TokenPair(
+            String accessToken,
+            String refreshToken,
+            String accessJti,
+            String refreshJti,
+            Instant accessExpiresAt,
+            Instant refreshExpiresAt
+    ) {}
 }
