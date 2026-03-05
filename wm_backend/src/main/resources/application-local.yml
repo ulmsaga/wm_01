@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: wm
+  datasource:
+    wmdb1:
+      jdbc-url: jdbc:mysql://localhost:3307/wmdb1?serverTimezone=Asia/Seoul&characterEncoding=utf8
+      username: wm
+      password: "!ckdtprl10!"
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      auto-commit: false
+    wmdb2:
+      jdbc-url: jdbc:mysql://localhost:3307/wmdb1?serverTimezone=Asia/Seoul&characterEncoding=utf8
+      username: wm
+      password: "!ckdtprl20!"
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      auto-commit: false
+server:
+  port: 8080
+
+app:
+  frontendBaseUrl: "http://localhost:5173"
+  jwt:
+    secret: "wm_local_secret_change_me_32bytes_minimum_123456"
+    issuer: "wm"
+    accessMinutes: 30
+    refreshDays: 30
+    cookieSecure: false
+    sameSite: "Lax"
+  kakao:
+    clientId: "${KAKAO_CLIENT_ID}"
+    redirectUri: "http://localhost:5173/auth/kakao/callback"
+

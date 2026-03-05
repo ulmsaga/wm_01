@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: wm
+server:
+  port: 8080
+
+app:
+  frontendBaseUrl: "https://your-prod-frontend-url"
+  jwt:
+    accessMinutes: 30
+    refreshDays: 30
+  kakao:
+    clientId: "${KAKAO_CLIENT_ID}"
+    redirectUri: "https://your-prod-frontend-url/auth/kakao/callback"
+
+spring:
+  datasource:
+    wmdb1:
+      hikari:
+        auto-commit: false
+      url: jdbc:mysql://prod-db-host:3306/prod-db1?serverTimezone=Asia/Seoul&characterEncoding=utf8
+      username: prod-username
+      password: "prod-password"
+    wmdb2:
+      hikari:
+        auto-commit: false
+      url: jdbc:mysql://prod-db-host:3307/prod-db2?serverTimezone=Asia/Seoul&characterEncoding=utf8
+      username: prod-username2
+      password: "prod-password2"
+
+mybatis:
+  config-location: classpath:mapper/MybatisConfig.xml
+  mapper-locations: classpath:mapper/**/sqlMapper_*.xml
+  type-aliases-package: com.saga.wm
+  configuration:
+    map-underscore-to-camel-case: true
