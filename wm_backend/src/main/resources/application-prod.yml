@@ -1,0 +1,41 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  datasource:
+    wmdb1:
+      jdbc-url: jdbc:mysql://localhost:3307/wmdb1?serverTimezone=Asia/Seoul&characterEncoding=utf8
+      username: ${WMDB1_USER}
+      password: ${WMDB1_PASSWORD}
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      auto-commit: false
+    wmdb2:
+      jdbc-url: jdbc:mysql://localhost:3307/wmdb1?serverTimezone=Asia/Seoul&characterEncoding=utf8
+      username: ${WMDB2_USER}
+      password: ${WMDB2_PASSWORD}
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      auto-commit: false
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
+server:
+  port: 8080
+
+app:
+  frontendBaseUrl: "http://localhost:5173"
+  jwt:
+    issuer: ${WM_JWT_ISSUER}
+    secret: ${WM_JWT_SECRET}  # 환경변수로 주입 권장
+    accessMinutes: 30
+    refreshDays: 30
+  cookie:
+    secure: true                 # 로컬은 false, 운영(https)은 true
+    sameSite: Lax               # 크로스사이트 요구 시 None(+Secure 필수) 고려
+  kakao:
+    clientId: ${KAKAO_CLIENT_ID}
+    redirectUri: http://localhost:5173/auth/kakao/callback
+
+logging:
+  level:
+    org.mybatis.spring.mapper.ClassPathMapperScanner: ERROR
