@@ -48,5 +48,30 @@
     DELETE FROM wm_refresh_token
     WHERE expires_at &lt; #{now}
   </delete>
+  
+  <select id="selectUserForLogin" parameterType="string" resultType="hashmap">
+    SELECT
+        USER_ID,
+        LOGIN_ID,
+        USER_NAME,
+        PASSWORD_HASH,
+        ROLE,
+        USE_YN
+    FROM WM_USER
+    WHERE LOGIN_ID = #{loginId}
+      AND USE_YN = 'Y'
+  </select>
 
+  <select id="selectUserInfoByLoginId" parameterType="string" resultType="hashmap">
+    SELECT
+        USER_ID,
+        LOGIN_ID,
+        USER_NAME,
+        ROLE
+    FROM WM_USER
+    WHERE LOGIN_ID = #{loginId}
+      AND USE_YN = 'Y'
+  </select>
+
+  
 </mapper>

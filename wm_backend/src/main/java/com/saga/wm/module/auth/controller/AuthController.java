@@ -1,97 +1,67 @@
 package com.saga.wm.module.auth.controller;
 
-import java.time.Duration;
-import java.util.Map;
-
-import org.springframework.http.ResponseCookie;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.saga.wm.module.auth.jwt.JwtCookieUtil;
-import com.saga.wm.module.auth.jwt.JwtProvider.TokenPair;
+import com.saga.wm.module.auth.dto.LoginRequest;
+import com.saga.wm.module.auth.dto.LoginResponse;
+import com.saga.wm.module.auth.dto.MeResponse;
+import com.saga.wm.module.auth.service.AuthService;
 import com.saga.wm.module.auth.service.RefreshTokenService;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
 
+    private final AuthService authService;
     private final RefreshTokenService refreshTokenService;
-    private final JwtCookieUtil jwtCookieUtil;
 
-    public AuthController(RefreshTokenService refreshTokenService, JwtCookieUtil jwtCookieUtil) {
+    @Autowired
+    public AuthController(AuthService authService, RefreshTokenService refreshTokenService) {
+        this.authService = authService;
         this.refreshTokenService = refreshTokenService;
-        this.jwtCookieUtil = jwtCookieUtil;
     }
 
-    // (임시) 로그인 흉내: uid를 userId로 보고 토큰 발급
-    @PostMapping("/test-login")
-    public ResponseEntity<?> testLogin(
-            @RequestParam("uid") long uid,
-            HttpServletRequest request
-    ) {
-        String ua = request.getHeader("User-Agent");
-        String ip = request.getRemoteAddr();
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(
+            @RequestBody LoginRequest request,
+            HttpServletResponse response) {
 
-        TokenPair pair = refreshTokenService.loginAndIssueTokens(uid, ua, ip);
+        // return ResponseEntity.ok(authService.login(request, response));
+        return null;
+    }
 
-        ResponseCookie access = jwtCookieUtil.accessCookie(pair.accessToken(), Duration.ofMinutes(30).getSeconds());
-        ResponseCookie refresh = jwtCookieUtil.refreshCookie(pair.refreshToken(), Duration.ofDays(30).getSeconds());
+    @GetMapping("/me")
+    public ResponseEntity<MeResponse> me(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
-        return ResponseEntity.ok()
-                .header("Set-Cookie", access.toString())
-                .header("Set-Cookie", refresh.toString())
-                .body(Map.of(
-                        "userId", uid,
-                        "accessExpiresAt", pair.accessExpiresAt().toString(),
-                        "refreshExpiresAt", pair.refreshExpiresAt().toString()
-                ));
+        // return ResponseEntity.ok(authService.getMe(authentication.getName()));
+        return null;
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<?> refresh(HttpServletRequest request) {
-        String refreshToken = readCookie(request, JwtCookieUtil.REFRESH_COOKIE);
-        String ua = request.getHeader("User-Agent");
-        String ip = request.getRemoteAddr();
-
-        TokenPair pair = refreshTokenService.refreshRotate(refreshToken, ua, ip);
-
-        ResponseCookie access = jwtCookieUtil.accessCookie(pair.accessToken(), Duration.ofMinutes(30).getSeconds());
-        ResponseCookie refresh = jwtCookieUtil.refreshCookie(pair.refreshToken(), Duration.ofDays(30).getSeconds());
-
-        return ResponseEntity.ok()
-                .header("Set-Cookie", access.toString())
-                .header("Set-Cookie", refresh.toString())
-                .body(Map.of(
-                        "refreshed", true,
-                        "accessExpiresAt", pair.accessExpiresAt().toString(),
-                        "refreshExpiresAt", pair.refreshExpiresAt().toString()
-                ));
+    public ResponseEntity<?> refresh(HttpServletRequest request, HttpServletResponse response) {
+        // refreshTokenService.refresh(request, response);
+        // return ResponseEntity.ok().build();
+        return null;
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(HttpServletRequest request) {
-        String refreshToken = readCookie(request, JwtCookieUtil.REFRESH_COOKIE);
-        refreshTokenService.logout(refreshToken);
-
-        ResponseCookie delA = jwtCookieUtil.deleteAccessCookie();
-        ResponseCookie delR = jwtCookieUtil.deleteRefreshCookie();
-
-        return ResponseEntity.ok()
-                .header("Set-Cookie", delA.toString())
-                .header("Set-Cookie", delR.toString())
-                .body(Map.of("logout", true));
+    public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
+        // refreshTokenService.logout(request, response);
+        return ResponseEntity.ok().build();
     }
-
-    private String readCookie(HttpServletRequest request, String name) {
-        if (request.getCookies() == null) return null;
-        for (var c : request.getCookies()) {
-            if (name.equals(c.getName())) return c.getValue();
-        }
-        return null;
-    }
+    
 }

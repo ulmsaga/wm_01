@@ -65,3 +65,5 @@ build/
 *.p12
 *.pem
 *.key
+
+cookies.txt
