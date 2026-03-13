@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import LoginPage from '../pages/auth/LoginPage';
+import LoginPage from '@/pages/auth/LoginPage';
 // import OtpPage from 'src/pages/OtpPage';
 // import HomePage from 'src/pages/HomePage';
 
