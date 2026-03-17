@@ -19,11 +19,23 @@ spring:
   autoconfigure:
     exclude:
       - org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USER}
+    password: ${MAIL_PASSWORD}
+    default-encoding: UTF-8
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+      mail.smtp.starttls.required: true
 server:
   port: 8080
 
 app:
   frontendBaseUrl: "http://localhost:5173"
+  mail:
+    from: ${MAIL_FROM}
   jwt:
     issuer: ${WM_JWT_ISSUER}
     secret: ${WM_JWT_SECRET}  # 환경변수로 주입 권장
@@ -37,5 +49,4 @@ app:
     redirectUri: http://localhost:5173/auth/kakao/callback
 
 logging:
-  level:
-    org.mybatis.spring.mapper.ClassPathMapperScanner: ERROR
+  config: classpath:logback-spring.xml   # logback-spring.xml 로 통합 관리

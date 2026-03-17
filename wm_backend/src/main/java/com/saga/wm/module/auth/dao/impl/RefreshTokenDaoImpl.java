@@ -40,8 +40,8 @@ public class RefreshTokenDaoImpl implements RefreshTokenDao {
     }
 
     @Override
-    public int revokeAllByUserId(Map<String, Object> p) {
-        return sqlSessionTemplateWmDb1.update(namespace + ".revokeAllRefreshTokensByUserId", p);
+    public int revokeAllByUserSeq(Map<String, Object> p) {
+        return sqlSessionTemplateWmDb1.update(namespace + ".revokeAllRefreshTokensByUserSeq", p);
     }
 
     @Override

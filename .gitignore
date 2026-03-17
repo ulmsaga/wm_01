@@ -1,0 +1,5 @@
+# 민감 정보
+.vscode/launch.json
+wm_frontend/.env
+wm_frontend/.env.local
+wm_frontend/.env.*.local

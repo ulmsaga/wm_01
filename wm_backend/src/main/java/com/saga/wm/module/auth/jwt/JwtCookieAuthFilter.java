@@ -3,7 +3,8 @@ package com.saga.wm.module.auth.jwt;
 import java.io.IOException;
 import java.util.List;
 
-import org.springframework.http.HttpHeaders;
+import com.saga.wm.core.exception.ErrorCode;
+import com.saga.wm.core.handler.SecurityErrorHandler;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -11,6 +12,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -21,16 +23,26 @@ import jakarta.servlet.http.HttpServletResponse;
 public class JwtCookieAuthFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
+    private final SecurityErrorHandler securityErrorHandler;
 
-    public JwtCookieAuthFilter(JwtProvider jwtProvider) {
+    public JwtCookieAuthFilter(JwtProvider jwtProvider, SecurityErrorHandler securityErrorHandler) {
         this.jwtProvider = jwtProvider;
+        this.securityErrorHandler = securityErrorHandler;
     }
+
+    // JWT 없이 접근 가능한 공개 경로만 명시 (me는 제외)
+    private static final List<String> PUBLIC_PATHS = List.of(
+            "/api/auth/rsa-public-key",
+            "/api/auth/login",
+            "/api/auth/verify-otp",
+            "/api/auth/refresh",
+            "/api/auth/logout"
+    );
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
-        // auth 계열은 access 없이도 접근 가능 (refresh/login/logout)
-        return path.startsWith("/api/auth/");
+        return PUBLIC_PATHS.contains(path);
     }
 
     @Override
@@ -68,11 +80,12 @@ public class JwtCookieAuthFilter extends OncePerRequestFilter {
             SecurityContextHolder.getContext().setAuthentication(auth);
             filterChain.doFilter(request, response);
 
+        } catch (ExpiredJwtException e) {
+            // 만료된 토큰 — 프론트에서 refresh 시도해야 함
+            securityErrorHandler.writeError(response, ErrorCode.TOKEN_EXPIRED);
         } catch (JwtException e) {
-            // 토큰이 이상하면 401로 떨어뜨리고 종료
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setHeader(HttpHeaders.CONTENT_TYPE, "application/json;charset=UTF-8");
-            response.getWriter().write("{\"message\":\"unauthorized\"}");
+            // 위변조 / 형식 오류 — 즉시 거부
+            securityErrorHandler.writeError(response, ErrorCode.TOKEN_INVALID);
         }
     }
 

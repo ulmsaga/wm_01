@@ -3,3 +3,5 @@ spring:
     name: wm
   profiles:
     active: local
+  jackson:
+    default-property-inclusion: non_null  # null 필드 응답에서 제외

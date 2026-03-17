@@ -1,19 +1,11 @@
 package com.saga.wm.module.auth.dto;
 
 public class LoginRequest {
-    private String loginId;
-    private String password;
+    private String keyId;
+    private String encryptedCredentials;
 
-    public String getLoginId() {
-        return loginId;
-    }
-    public String getPassword() {
-        return password;
-    }
-    public void setLoginId(String loginId) {
-        this.loginId = loginId;
-    }
-    public void setPassword(String password) {
-        this.password = password;
-    }
+    public String getKeyId() { return keyId; }
+    public String getEncryptedCredentials() { return encryptedCredentials; }
+    public void setKeyId(String keyId) { this.keyId = keyId; }
+    public void setEncryptedCredentials(String encryptedCredentials) { this.encryptedCredentials = encryptedCredentials; }
 }
