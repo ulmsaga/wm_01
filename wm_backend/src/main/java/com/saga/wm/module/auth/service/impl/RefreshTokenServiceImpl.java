@@ -88,6 +88,17 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
 
     @Override
     @Transactional
+    public int revokeAllSessions(long userSeq) {
+        return refreshTokenDao.revokeAllByUserSeq(Map.of("userSeq", userSeq));
+    }
+
+    @Override
+    public boolean hasActiveSessions(long userSeq) {
+        return refreshTokenDao.countActiveSessions(Map.of("userSeq", userSeq)) > 0;
+    }
+
+    @Override
+    @Transactional
     public void logout(String refreshToken) {
         if (refreshToken == null || refreshToken.isBlank()) return;
 

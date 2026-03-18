@@ -49,4 +49,4 @@ app:
     redirectUri: http://localhost:5173/auth/kakao/callback
 
 logging:
-  config: classpath:logback-spring.xml   # logback-spring.xml 로 통합 관리
+  config: classpath:logging/logback-spring.xml

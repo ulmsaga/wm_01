@@ -98,6 +98,9 @@ public class AuthController {
 
         long userSeq = otpService.verifyOtp(otpSeq, otpCode);
 
+        // 2FA 완료 시점에 중복 로그인 처리 (allow_duplicate_login = N이면 기존 세션 kick)
+        authService.kickIfDuplicateNotAllowed(userSeq);
+
         JwtProvider.TokenPair tokenPair = refreshTokenService.loginAndIssueTokens(
                 userSeq, httpRequest.getHeader("User-Agent"), httpRequest.getRemoteAddr());
 

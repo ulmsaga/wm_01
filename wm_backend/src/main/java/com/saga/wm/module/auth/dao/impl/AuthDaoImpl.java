@@ -43,4 +43,9 @@ public class AuthDaoImpl implements AuthDao {
     public Map<String, Object> selectUserInfoByUserSeq(long userSeq) {
         return sqlSessionTemplateWmDb1.selectOne(namespace + ".selectUserInfoByUserSeq", userSeq);
     }
+
+    @Override
+    public String selectAllowDuplicateLogin(long userSeq) {
+        return sqlSessionTemplateWmDb1.selectOne(namespace + ".selectAllowDuplicateLogin", userSeq);
+    }
 }

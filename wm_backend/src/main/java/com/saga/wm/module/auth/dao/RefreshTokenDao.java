@@ -9,4 +9,8 @@ public interface RefreshTokenDao {
     int rotate(Map<String, Object> p);
     int revokeAllByUserSeq(Map<String, Object> p);
     int deleteExpired(Map<String, Object> p);
+    int countActiveSessions(Map<String, Object> p);
+
+    /** 서버 재기동 시 전체 활성 세션 일괄 무효화 */
+    int revokeAllActiveSessions();
 }

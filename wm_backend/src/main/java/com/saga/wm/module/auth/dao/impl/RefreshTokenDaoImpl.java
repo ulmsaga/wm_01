@@ -48,4 +48,14 @@ public class RefreshTokenDaoImpl implements RefreshTokenDao {
     public int deleteExpired(Map<String, Object> p) {
         return sqlSessionTemplateWmDb1.delete(namespace + ".deleteExpiredRefreshTokens", p);
     }
+
+    @Override
+    public int countActiveSessions(Map<String, Object> p) {
+        return sqlSessionTemplateWmDb1.selectOne(namespace + ".countActiveSessions", p);
+    }
+
+    @Override
+    public int revokeAllActiveSessions() {
+        return sqlSessionTemplateWmDb1.update(namespace + ".revokeAllActiveSessions");
+    }
 }

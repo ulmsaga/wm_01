@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import jakarta.servlet.DispatcherType;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -19,6 +20,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import com.saga.wm.core.handler.SecurityErrorHandler;
 import com.saga.wm.module.auth.jwt.JwtCookieAuthFilter;
 import com.saga.wm.module.auth.jwt.JwtProvider;
+import com.saga.wm.module.auth.sse.SseSessionRegistry;
 
 @Configuration
 public class SecurityConfig {
@@ -47,12 +49,15 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
                                            JwtProvider jwtProvider,
-                                           SecurityErrorHandler securityErrorHandler) throws Exception {
+                                           SecurityErrorHandler securityErrorHandler,
+                                           SseSessionRegistry sseSessionRegistry) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
             .cors(Customizer.withDefaults())
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                // SSE complete() 시 Tomcat async dispatch가 Security 체인을 재통과 → permitAll 필요
+                .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().permitAll()
@@ -61,7 +66,7 @@ public class SecurityConfig {
                 .authenticationEntryPoint(securityErrorHandler)
                 .accessDeniedHandler(securityErrorHandler)
             )
-            .addFilterBefore(new JwtCookieAuthFilter(jwtProvider, securityErrorHandler),
+            .addFilterBefore(new JwtCookieAuthFilter(jwtProvider, securityErrorHandler, sseSessionRegistry),
                     UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

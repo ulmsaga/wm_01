@@ -8,4 +8,6 @@ public interface AuthDao {
     void updateLoginFailure(Map<String, Object> param);
     void updateUserLastLoginAt(Map<String, Object> param);
     Map<String, Object> selectUserInfoByUserSeq(long userSeq);
+
+    String selectAllowDuplicateLogin(long userSeq);
 }

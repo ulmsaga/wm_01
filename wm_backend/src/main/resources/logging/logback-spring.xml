@@ -99,6 +99,9 @@
         <!-- p6spy: 파라미터 인라인 SQL 출력 -->
         <logger name="p6spy"                                              level="DEBUG"/>
 
+        <!-- SSE 장기 연결 종료 시 Tomcat 내부 RecycleRequiredException 경고 억제 (노이즈, 실제 오류 아님) -->
+        <logger name="org.apache.catalina.connector.CoyoteAdapter"       level="ERROR"/>
+
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>
         </root>

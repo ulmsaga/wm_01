@@ -1,0 +1,96 @@
+### ──────────────────────────────────────────────────────────────────
+###  MessageSource i18n 테스트
+###  VSCode: REST Client 확장 설치 후 "Send Request" 클릭
+###  IntelliJ: 좌측 ▶ 버튼 클릭
+### ──────────────────────────────────────────────────────────────────
+
+@baseUrl = http://localhost:8080/api
+
+### ── 1. 한국어 (기본 / Accept-Language 없음) ──────────────────────
+###  기대 응답: "아이디 또는 비밀번호가 일치하지 않습니다."
+
+# @name loginFail_ko
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "keyId": "invalid-key-for-test",
+  "encryptedCredentials": "invalid",
+  "forceLogin": false
+}
+
+###
+
+### ── 2. 한국어 (명시) ─────────────────────────────────────────────
+###  기대 응답: "아이디 또는 비밀번호가 일치하지 않습니다."
+
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+Accept-Language: ko
+
+{
+  "keyId": "invalid-key-for-test",
+  "encryptedCredentials": "invalid",
+  "forceLogin": false
+}
+
+###
+
+### ── 3. 영어 ──────────────────────────────────────────────────────
+###  기대 응답: "Invalid ID or password."
+
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+Accept-Language: en
+
+{
+  "keyId": "invalid-key-for-test",
+  "encryptedCredentials": "invalid",
+  "forceLogin": false
+}
+
+###
+
+### ── 4. 일본어 ────────────────────────────────────────────────────
+###  기대 응답: "IDまたはパスワードが正しくありません。"
+
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+Accept-Language: ja
+
+{
+  "keyId": "invalid-key-for-test",
+  "encryptedCredentials": "invalid",
+  "forceLogin": false
+}
+
+###
+
+### ── 5. 미지원 locale (중국어) → fallback → 기본(한국어) ──────────
+###  기대 응답: "아이디 또는 비밀번호가 일치하지 않습니다."
+
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+Accept-Language: zh
+
+{
+  "keyId": "8c2ebdc6-933e-40e4-9142-c253b79e56cd",
+  "encryptedCredentials": "Oiso9f6zii08v2SD6890oT/tY1Q0HgGF30Yqne+innlLreNF5RUoXYX8KFnzsShO5NAYQqRg5QTjjh2hb5rm8KF7rSqknmHL0rx4M5zUVzZ1dm+1q1kAxWrwvynIS4hL9hLpFTdE7g+PHlHNPn+ltT0BUNgvQVzbhKGWA0CC53tnMSsrdetHVol2CcAKkhzCK+sB4EssrhUMrU1nR1yEZtW6AMR5xZgypmHjUIpCHHV9M8b4+JOb8B79uVBhqR4i92iTcr3X+P85/6oKhuyxStgzRGdgiiCYKtGg0PLIopI0CuyrqzOl5v9JL8cmi9bgR+Gy0LwVZPPhO4fcVDVG5g==",
+  "forceLogin": false,
+}
+
+###
+
+### ── 6. JWT 없이 보호 리소스 접근 (SecurityErrorHandler 경로) ─────
+###  기대 응답(ja): "認証が必要です。"
+
+GET {{baseUrl}}/auth/me
+Accept-Language: ja
+
+###
+
+### ── 7. RSA 공개키 발급 (정상 - 메시지 없음, 동작 확인용) ─────────
+
+GET {{baseUrl}}/auth/rsa-public-key
+
+###

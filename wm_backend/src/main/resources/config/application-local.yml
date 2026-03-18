@@ -20,6 +20,10 @@ spring:
     exclude:
       - org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
 
+  mvc:
+    async:
+      request-timeout: -1   # SSE 장기 연결 유지 (Tomcat 비동기 타임아웃 무제한)
+
   # Mailpit (로컬 SMTP 테스트 서버 - docker run -d --name mailpit -p 1025:1025 -p 8025:8025 axllent/mailpit)
   mail:
     host: localhost
@@ -42,7 +46,7 @@ app:
   jwt:
     issuer: wm
     secret: ${WM_JWT_SECRET}          # 환경변수 유지 (최소 32바이트 Base64)
-    accessMinutes: 30
+    accessMinutes: 5
     refreshDays: 30
   cookie:
     secure: false                     # 로컬은 false, 운영(https)은 true
@@ -52,4 +56,4 @@ app:
     redirectUri: http://localhost:5173/auth/kakao/callback
 
 logging:
-  config: classpath:logback-spring.xml
+  config: classpath:logging/logback-spring.xml

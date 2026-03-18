@@ -44,6 +44,22 @@
       AND revoked_at IS NULL
   </update>
 
+  <!-- 서버 재기동 시 전체 활성 세션 무효화 -->
+  <update id="revokeAllActiveSessions">
+    UPDATE wm_refresh_token
+    SET revoked_at = NOW()
+    WHERE revoked_at IS NULL
+      AND expires_at > NOW()
+  </update>
+
+  <select id="countActiveSessions" parameterType="map" resultType="int">
+    SELECT COUNT(*)
+    FROM wm_refresh_token
+    WHERE user_id = #{userSeq}
+      AND revoked_at IS NULL
+      AND expires_at > NOW()
+  </select>
+
   <delete id="deleteExpiredRefreshTokens" parameterType="map">
     DELETE FROM wm_refresh_token
     WHERE expires_at &lt; #{now}
@@ -90,6 +106,13 @@
       last_login_at = NOW()
     WHERE user_seq = #{userSeq}
   </update>
+
+  <select id="selectAllowDuplicateLogin" parameterType="long" resultType="string">
+    SELECT allow_duplicate_login
+    FROM wm_user
+    WHERE user_seq = #{userSeq}
+      AND use_yn = 'Y'
+  </select>
 
   <select id="selectUserInfoByUserSeq" parameterType="long" resultType="hashmap">
     SELECT

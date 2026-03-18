@@ -68,6 +68,7 @@ export async function login(params) {
   const response = await axiosInstance.post('/auth/login', {
     keyId,
     encryptedCredentials,
+    forceLogin: params.forceLogin ?? false,
   });
   return response.data;
 }

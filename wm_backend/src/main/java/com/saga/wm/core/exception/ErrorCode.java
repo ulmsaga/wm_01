@@ -5,40 +5,40 @@ import org.springframework.http.HttpStatus;
 public enum ErrorCode {
 
     // 인증 (토큰)
-    UNAUTHORIZED("인증이 필요합니다.", HttpStatus.UNAUTHORIZED),
-    TOKEN_EXPIRED("토큰이 만료되었습니다. 다시 로그인해 주세요.", HttpStatus.UNAUTHORIZED),
-    TOKEN_INVALID("유효하지 않은 토큰입니다.", HttpStatus.UNAUTHORIZED),
-    ACCESS_DENIED("접근 권한이 없습니다.", HttpStatus.FORBIDDEN),
+    UNAUTHORIZED("error.unauthorized", HttpStatus.UNAUTHORIZED),
+    TOKEN_EXPIRED("error.token.expired", HttpStatus.UNAUTHORIZED),
+    TOKEN_INVALID("error.token.invalid", HttpStatus.UNAUTHORIZED),
+    ACCESS_DENIED("error.access.denied", HttpStatus.FORBIDDEN),
 
     // 로그인
-    LOGIN_FAILED("아이디 또는 비밀번호가 일치하지 않습니다.", HttpStatus.UNAUTHORIZED),
-    ACCOUNT_INACTIVE("비활성화된 계정입니다.", HttpStatus.UNAUTHORIZED),
-    AUTH_LOCKED("잠금된 인증수단입니다.", HttpStatus.UNAUTHORIZED),
-    INVALID_CREDENTIALS_FORMAT("잘못된 인증 데이터 형식입니다.", HttpStatus.BAD_REQUEST),
-    NO_SECOND_AUTH_TARGET("2차 인증 수단(이메일/전화번호)이 등록되어 있지 않습니다.", HttpStatus.BAD_REQUEST),
+    LOGIN_FAILED("error.login.failed", HttpStatus.UNAUTHORIZED),
+    ACCOUNT_INACTIVE("error.account.inactive", HttpStatus.UNAUTHORIZED),
+    AUTH_LOCKED("error.auth.locked", HttpStatus.UNAUTHORIZED),
+    INVALID_CREDENTIALS_FORMAT("error.invalid.credentials.format", HttpStatus.BAD_REQUEST),
+    NO_SECOND_AUTH_TARGET("error.no.second.auth.target", HttpStatus.BAD_REQUEST),
 
     // OTP
-    OTP_NOT_FOUND("유효하지 않은 OTP 요청입니다.", HttpStatus.UNAUTHORIZED),
-    OTP_ALREADY_USED("이미 사용된 OTP입니다.", HttpStatus.UNAUTHORIZED),
-    OTP_EXPIRED("OTP가 만료되었습니다. 다시 로그인해 주세요.", HttpStatus.UNAUTHORIZED),
-    OTP_MAX_FAILED("OTP 인증 시도 횟수를 초과했습니다. 다시 로그인해 주세요.", HttpStatus.UNAUTHORIZED),
-    OTP_MISMATCH("OTP가 일치하지 않습니다.", HttpStatus.UNAUTHORIZED),
+    OTP_NOT_FOUND("error.otp.not.found", HttpStatus.UNAUTHORIZED),
+    OTP_ALREADY_USED("error.otp.already.used", HttpStatus.UNAUTHORIZED),
+    OTP_EXPIRED("error.otp.expired", HttpStatus.UNAUTHORIZED),
+    OTP_MAX_FAILED("error.otp.max.failed", HttpStatus.UNAUTHORIZED),
+    OTP_MISMATCH("error.otp.mismatch", HttpStatus.UNAUTHORIZED),
 
     // 이메일
-    EMAIL_SEND_FAILED("이메일 발송에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+    EMAIL_SEND_FAILED("error.email.send.failed", HttpStatus.INTERNAL_SERVER_ERROR),
 
     // 공통
-    BAD_REQUEST("잘못된 요청입니다.", HttpStatus.BAD_REQUEST),
-    INTERNAL_SERVER_ERROR("서버 오류가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR);
+    BAD_REQUEST("error.bad.request", HttpStatus.BAD_REQUEST),
+    INTERNAL_SERVER_ERROR("error.internal.server.error", HttpStatus.INTERNAL_SERVER_ERROR);
 
-    private final String message;
+    private final String messageKey;
     private final HttpStatus status;
 
-    ErrorCode(String message, HttpStatus status) {
-        this.message = message;
+    ErrorCode(String messageKey, HttpStatus status) {
+        this.messageKey = messageKey;
         this.status = status;
     }
 
-    public String getMessage() { return message; }
+    public String getMessageKey() { return messageKey; }
     public HttpStatus getStatus() { return status; }
 }

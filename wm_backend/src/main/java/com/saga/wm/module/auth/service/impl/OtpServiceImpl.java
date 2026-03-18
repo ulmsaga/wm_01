@@ -92,8 +92,7 @@ public class OtpServiceImpl implements OtpService {
         if (!storedCode.equals(otpCode)) {
             otpDao.incrementOtpFailCount(otpSeq);
             int remaining = maxFailCount - failCount - 1;
-            throw new WmException(ErrorCode.OTP_MISMATCH,
-                    ErrorCode.OTP_MISMATCH.getMessage() + " (남은 시도: " + remaining + "회)");
+            throw new WmException(ErrorCode.OTP_MISMATCH, remaining);
         }
 
         // 인증 성공
