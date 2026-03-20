@@ -1,0 +1,59 @@
+spring:
+  config:
+    activate:
+      on-profile: local
+
+  datasource:
+    nttpocdb1:
+      jdbc-url: jdbc:p6spy:mysql://localhost:3308/nttpocdb?serverTimezone=Asia/Seoul&characterEncoding=utf8
+      username: nttpoc
+      password: ${NTTPOC_PASSWORD}
+      driver-class-name: com.p6spy.engine.spy.P6SpyDriver
+      auto-commit: false
+    nttpocdb2:
+      jdbc-url: jdbc:p6spy:mysql://localhost:3308/nttpocdb?serverTimezone=Asia/Seoul&characterEncoding=utf8
+      username: nttpoc
+      password: ${NTTPOC_PASSWORD}
+      driver-class-name: com.p6spy.engine.spy.P6SpyDriver
+      auto-commit: false
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
+
+  mvc:
+    async:
+      request-timeout: -1   # SSE 장기 연결 유지 (Tomcat 비동기 타임아웃 무제한)
+
+  # Mailpit (로컬 SMTP 테스트 서버 - docker run -d --name mailpit -p 1025:1025 -p 8025:8025 axllent/mailpit)
+  mail:
+    host: localhost
+    port: 1025
+    default-encoding: UTF-8
+    properties:
+      "[mail.smtp.auth]": false
+      "[mail.smtp.starttls.enable]": false
+      "[mail.smtp.connectiontimeout]": 5000
+      "[mail.smtp.timeout]": 5000
+      "[mail.smtp.writetimeout]": 5000
+
+server:
+  port: 8080
+
+app:
+  frontendBaseUrl: "http://localhost:5173"
+  mail:
+    from: sclee1115@gmail.com
+  jwt:
+    issuer: nttpoc
+    secret: ${NTTPOC_JWT_SECRET}          # 환경변수 유지 (최소 32바이트 Base64)
+    accessMinutes: 5
+    refreshDays: 30
+  cookie:
+    secure: false                     # 로컬은 false, 운영(https)은 true
+    sameSite: Lax
+  kakao:
+    clientId: # TODO: Kakao Client ID 입력
+    redirectUri: http://localhost:5173/auth/kakao/callback
+
+logging:
+  config: classpath:logging/logback-spring.xml

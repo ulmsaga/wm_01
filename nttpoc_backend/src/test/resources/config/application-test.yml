@@ -1,0 +1,47 @@
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  datasource:
+    nttpocdb1:
+      jdbc-url: jdbc:h2:mem:nttpocdb1test;DB_CLOSE_DELAY=-1;MODE=MySQL
+      username: sa
+      password: ""
+      driver-class-name: org.h2.Driver
+    nttpocdb2:
+      jdbc-url: jdbc:h2:mem:nttpocdb2test;DB_CLOSE_DELAY=-1;MODE=MySQL
+      username: sa
+      password: ""
+      driver-class-name: org.h2.Driver
+
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
+
+  mail:
+    host: localhost
+    port: 1025
+    default-encoding: UTF-8
+    properties:
+      "[mail.smtp.auth]": false
+      "[mail.smtp.starttls.enable]": false
+      "[mail.smtp.connectiontimeout]": 1000
+      "[mail.smtp.timeout]": 1000
+      "[mail.smtp.writetimeout]": 1000
+
+app:
+  frontendBaseUrl: "http://localhost:5173"
+  mail:
+    from: test@test.com
+  jwt:
+    issuer: nttpoc
+    secret: MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI=   # 테스트용 32바이트 Base64
+    accessMinutes: 5
+    refreshDays: 30
+  cookie:
+    secure: false
+    sameSite: Lax
+  kakao:
+    clientId:
+    redirectUri: http://localhost:5173/auth/kakao/callback

@@ -1,0 +1,52 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  datasource:
+    nttpocdb1:
+      jdbc-url: jdbc:mysql://localhost:3308/nttpocdb?serverTimezone=Asia/Seoul&characterEncoding=utf8
+      username: nttpoc
+      password: ${NTTPOC_PASSWORD}
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      auto-commit: false
+    nttpocdb2:
+      jdbc-url: jdbc:mysql://localhost:3308/nttpocdb?serverTimezone=Asia/Seoul&characterEncoding=utf8
+      username: nttpoc
+      password: ${NTTPOC_PASSWORD}
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      auto-commit: false
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USER}
+    password: ${MAIL_PASSWORD}
+    default-encoding: UTF-8
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+      mail.smtp.starttls.required: true
+server:
+  port: 8080
+
+app:
+  frontendBaseUrl: "http://localhost:5173"
+  mail:
+    from: ${MAIL_FROM}
+  jwt:
+    issuer: nttpoc
+    secret: ${NTTPOC_JWT_SECRET}  # 환경변수로 주입 권장
+    accessMinutes: 30
+    refreshDays: 30
+  cookie:
+    secure: true                 # 로컬은 false, 운영(https)은 true
+    sameSite: Lax               # 크로스사이트 요구 시 None(+Secure 필수) 고려
+  kakao:
+    clientId: ${KAKAO_CLIENT_ID}
+    redirectUri: http://localhost:5173/auth/kakao/callback
+
+logging:
+  config: classpath:logging/logback-spring.xml

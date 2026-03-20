@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mobigen.aiop.nttpoc.module.auth">
+
+  <insert id="insertRefreshToken" parameterType="map">
+    INSERT INTO cm_refresh_token
+      (user_id, jti_hash, issued_at, expires_at, user_agent, ip_addr)
+    VALUES
+      (#{userSeq}, #{jtiHash}, #{issuedAt}, #{expiresAt}, #{userAgent}, #{ipAddr})
+  </insert>
+
+  <select id="selectRefreshTokenByJtiHash" parameterType="map" resultType="map">
+    SELECT
+      rt_id, user_id, jti_hash, issued_at, expires_at,
+      revoked_at, replaced_by, user_agent, ip_addr, created_at
+    FROM cm_refresh_token
+    WHERE jti_hash = #{jtiHash}
+    LIMIT 1
+  </select>
+
+  <update id="revokeRefreshTokenByJtiHash" parameterType="map">
+    UPDATE cm_refresh_token
+    SET revoked_at = NOW()
+    WHERE jti_hash = #{jtiHash}
+      AND revoked_at IS NULL
+  </update>
+
+  <!-- rotate: 기존 토큰을 revoked 처리 + replaced_by 기록 -->
+  <update id="rotateRefreshToken" parameterType="map">
+    UPDATE cm_refresh_token
+    SET revoked_at = NOW(),
+        replaced_by = #{newJtiHash}
+    WHERE jti_hash = #{oldJtiHash}
+      AND revoked_at IS NULL
+  </update>
+
+  <update id="revokeAllRefreshTokensByUserSeq" parameterType="map">
+    UPDATE cm_refresh_token
+    SET revoked_at = NOW()
+    WHERE user_id = #{userSeq}
+      AND revoked_at IS NULL
+  </update>
+
+  <!-- 서버 재기동 시 전체 활성 세션 무효화 -->
+  <update id="revokeAllActiveSessions">
+    UPDATE cm_refresh_token
+    SET revoked_at = NOW()
+    WHERE revoked_at IS NULL
+      AND expires_at > NOW()
+  </update>
+
+  <select id="countActiveSessions" parameterType="map" resultType="int">
+    SELECT COUNT(*)
+    FROM cm_refresh_token
+    WHERE user_id = #{userSeq}
+      AND revoked_at IS NULL
+      AND expires_at > NOW()
+  </select>
+
+  <delete id="deleteExpiredRefreshTokens" parameterType="map">
+    DELETE FROM cm_refresh_token
+    WHERE expires_at &lt; #{now}
+  </delete>
+  
+  <select id="selectUserForLogin" parameterType="map" resultType="hashmap">
+    SELECT
+        u.user_seq                AS USER_SEQ,
+        u.user_id                 AS USER_ID,
+        u.user_name               AS USER_NAME,
+        u.user_status             AS USER_STATUS,
+        u.email                   AS EMAIL,
+        u.phone                   AS PHONE,
+        u.require_second_auth     AS REQUIRE_SECOND_AUTH,
+        u.allow_duplicate_login   AS ALLOW_DUPLICATE_LOGIN,
+        ua.user_auth_seq          AS USER_AUTH_SEQ,
+        ua.auth_identifier        AS AUTH_IDENTIFIER,
+        ua.password_hash          AS PASSWORD_HASH,
+        ua.auth_status            AS AUTH_STATUS,
+        ua.failed_login_count     AS FAILED_LOGIN_COUNT
+    FROM cm_user_auth ua
+    INNER JOIN cm_user u ON u.user_seq = ua.user_seq
+                        AND u.use_yn = 'Y'
+    WHERE ua.auth_type = #{authType}
+      AND ua.auth_identifier = #{authIdentifier}
+      AND ua.use_yn = 'Y'
+  </select>
+
+  <update id="updateLoginSuccess" parameterType="map">
+    UPDATE cm_user_auth SET
+      failed_login_count = 0
+    , last_auth_at = NOW()
+    WHERE user_auth_seq = #{userAuthSeq}
+  </update>
+
+  <update id="updateLoginFailure" parameterType="map">
+    UPDATE cm_user_auth SET
+      failed_login_count = failed_login_count + 1
+    WHERE user_auth_seq = #{userAuthSeq}
+  </update>
+
+  <update id="updateUserLastLoginAt" parameterType="map">
+    UPDATE cm_user SET
+      last_login_at = NOW()
+    WHERE user_seq = #{userSeq}
+  </update>
+
+  <select id="selectAllowDuplicateLogin" parameterType="long" resultType="string">
+    SELECT allow_duplicate_login
+    FROM cm_user
+    WHERE user_seq = #{userSeq}
+      AND use_yn = 'Y'
+  </select>
+
+  <select id="selectUserInfoByUserSeq" parameterType="long" resultType="hashmap">
+    SELECT
+        u.user_seq    AS USER_SEQ,
+        u.user_id     AS USER_ID,
+        u.user_name   AS USER_NAME,
+        u.user_status AS USER_STATUS
+    FROM cm_user u
+    WHERE u.user_seq = #{userSeq}
+      AND u.use_yn = 'Y'
+  </select>
+
+  <!-- ========================= OTP ========================= -->
+
+  <insert id="insertOtp" parameterType="map" useGeneratedKeys="true" keyProperty="otpSeq" keyColumn="otp_seq">
+    INSERT INTO cm_otp_verification
+      (user_seq, otp_code, otp_type, send_type, send_target,
+       fail_count, max_fail_count, verified_yn, expired_at, created_at)
+    VALUES
+      (#{userSeq}, #{otpCode}, #{otpType}, #{sendType}, #{sendTarget},
+       0, #{maxFailCount}, 'N', #{expiredAt}, NOW())
+  </insert>
+
+  <select id="selectOtpBySeq" parameterType="long" resultType="hashmap">
+    SELECT
+        otp_seq          AS OTP_SEQ,
+        user_seq         AS USER_SEQ,
+        otp_code         AS OTP_CODE,
+        otp_type         AS OTP_TYPE,
+        send_type        AS SEND_TYPE,
+        send_target      AS SEND_TARGET,
+        fail_count       AS FAIL_COUNT,
+        max_fail_count   AS MAX_FAIL_COUNT,
+        verified_yn      AS VERIFIED_YN,
+        expired_at       AS EXPIRED_AT,
+        verified_at      AS VERIFIED_AT,
+        created_at       AS CREATED_AT
+    FROM cm_otp_verification
+    WHERE otp_seq = #{otpSeq}
+  </select>
+
+  <update id="incrementOtpFailCount" parameterType="long">
+    UPDATE cm_otp_verification
+    SET fail_count = fail_count + 1
+    WHERE otp_seq = #{otpSeq}
+  </update>
+
+  <update id="updateOtpVerified" parameterType="long">
+    UPDATE cm_otp_verification
+    SET verified_yn = 'Y',
+        verified_at = NOW()
+    WHERE otp_seq = #{otpSeq}
+  </update>
+
+</mapper>

@@ -304,7 +304,7 @@ Backend (RefreshTokenServiceImpl)                         Frontend (AuthContext)
         │  Set-Cookie: wm_at=<AT>; HttpOnly; Secure; SameSite=Strict; Max-Age=300
         │  Set-Cookie: wm_rt=<RT>; HttpOnly; Secure; SameSite=Strict; Max-Age=2592000
         │                                                       │
-        │── { userSeq, userUid, userName } ───────────────────►│
+        │── { userSeq, userId, userName } ────────────────────►│
         │   (or { authenticated, ... } from /auth/me)           │
         │                                                       │
         │                                              loginUser(userData) 호출

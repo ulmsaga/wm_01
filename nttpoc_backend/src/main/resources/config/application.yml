@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: nttpoc
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  jackson:
+    default-property-inclusion: non_null  # null 필드 응답에서 제외
+  messages:
+    basename: i18n/messages
+    encoding: UTF-8
+    use-code-as-default-message: false
