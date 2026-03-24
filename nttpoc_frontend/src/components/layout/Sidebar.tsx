@@ -1,19 +1,46 @@
 import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, LogOut } from 'lucide-react';
+import {
+  AlertCircle,
+  BarChart2,
+  Boxes,
+  LogOut,
+  Monitor,
+  Network,
+  Settings,
+  TrendingUp,
+  Users,
+  Layers,
+  Activity,
+} from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import { logout } from '@/api/auth/authApi';
 import { cn } from '@/lib/utils';
 import NavTree from './NavTree';
-import type { NavItem } from '@/types';
+import type { MenuItem, NavItem } from '@/types';
+import type { ComponentType } from 'react';
 
-const NAV_ITEMS: NavItem[] = [
-  {
-    label: '대시보드',
-    icon: LayoutDashboard,
-    path: '/home',
-  },
-  // RBAC 구현 후 동적 메뉴로 교체 예정
-];
+const ICON_MAP: Record<string, ComponentType<{ className?: string }>> = {
+  'icon-nw':       Network,
+  'icon-app':      Layers,
+  'icon-monitor':  Monitor,
+  'icon-analysis': BarChart2,
+  'icon-kpi':      TrendingUp,
+  'icon-cause':    AlertCircle,
+  'icon-manage':   Settings,
+  'icon-admin':    Settings,
+  'icon-users':    Users,
+  'icon-twin':     Boxes,
+};
+
+function menuToNavItems(items: MenuItem[]): NavItem[] {
+  return items.map((item) => ({
+    label: item.menuName,
+    icon: item.icon ? ICON_MAP[item.icon] : undefined,
+    path: item.menuPath ?? undefined,
+    children: item.children.length > 0 ? menuToNavItems(item.children) : undefined,
+  }));
+}
 
 interface SidebarProps {
   open: boolean;
@@ -21,8 +48,9 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ open, onClose }: SidebarProps) {
-  const { user, logoutUser } = useAuth();
+  const { user, menu, logoutUser } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation('common');
 
   async function handleLogout() {
     try {
@@ -53,9 +81,17 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           open ? 'translate-x-0' : '-translate-x-full'
         )}
       >
+        {/* 시스템 브랜딩 */}
+        <div className="flex items-center gap-2.5 px-4 py-3 border-b border-border shrink-0">
+          <Activity className="size-4 text-primary shrink-0" />
+          <span className="text-xs font-semibold tracking-widest text-foreground uppercase">
+            NTTPOC
+          </span>
+        </div>
+
         {/* 트리 메뉴 */}
         <div className="flex-1 overflow-y-auto py-3 px-2">
-          <NavTree items={NAV_ITEMS} onNavigate={onClose} />
+          <NavTree items={menuToNavItems(menu)} onNavigate={onClose} />
         </div>
 
         {/* 사용자 정보 + 로그아웃 */}
@@ -69,7 +105,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
             className="flex items-center gap-2 w-full px-3 py-2 text-sm rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
           >
             <LogOut className="size-4 shrink-0" />
-            <span>로그아웃</span>
+            <span>{t('nav.logout')}</span>
           </button>
         </div>
       </aside>

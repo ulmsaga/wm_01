@@ -1,0 +1,88 @@
+{
+  "live": "LIVE",
+  "status": {
+    "normal": "Normal",
+    "warning": "Warning",
+    "critical": "Critical",
+    "offline": "Offline"
+  },
+  "topology": {
+    "title": "NW Topology Monitor",
+    "subTitle": "Network Topology",
+    "clickHint": "Click to view node details",
+    "selectNode": "Select a node",
+    "kpi": {
+      "total": "Total Nodes",
+      "totalSub": "Monitored",
+      "normal": "Normal",
+      "normalSub": "Running",
+      "alert": "Alert",
+      "alertSub": "Attention required",
+      "fault": "Fault",
+      "faultSub": "Immediate action needed"
+    },
+    "detail": {
+      "ip": "IP",
+      "layer": "Layer",
+      "cpu": "CPU"
+    },
+    "layer": {
+      "core": "Core",
+      "dist": "Distribution",
+      "edge": "Edge"
+    },
+    "alerts": {
+      "panelTitle": "Active Alerts"
+    },
+    "linkUtil": {
+      "panelTitle": "Link Utilization TOP5",
+      "down": "DOWN"
+    },
+    "spark": {
+      "traffic": "Total Traffic",
+      "latency": "Latency (RTT)",
+      "loss": "Packet Loss"
+    }
+  },
+  "digitalTwin": {
+    "title": "Equipment Room Digital Twin",
+    "layoutTitle": "Equipment Room Server Layout",
+    "selectDevice": "Select a device",
+    "abnormal": {
+      "panelTitle": "Abnormal Device Monitor",
+      "lv1": "Lv-1 Alert",
+      "lv2": "Lv-2 Alert",
+      "lv3": "Lv-3 Alert",
+      "offline": "Offline"
+    },
+    "overall": {
+      "panelTitle": "Overall Operation",
+      "cpuAvg": "CPU Avg",
+      "memAvg": "MEM Avg"
+    },
+    "deviceList": {
+      "panelTitle": "Device Status",
+      "name": "Device Name",
+      "status": "Status",
+      "cpu": "CPU",
+      "uptime": "Uptime"
+    },
+    "detail": {
+      "deviceName": "Device Name",
+      "year": "Mfg. Year",
+      "responsible": "Responsible",
+      "uptime": "Online Duration",
+      "load": "Load"
+    },
+    "ranking": {
+      "cpu": "CPU Usage Ranking",
+      "temp": "Temperature Ranking"
+    },
+    "tab": {
+      "overview": "Overview",
+      "security": "Security",
+      "device": "Device Mgmt",
+      "energy": "Energy"
+    }
+  }
+}

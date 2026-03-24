@@ -18,7 +18,7 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
         <Menu className="size-5" />
       </button>
 
-      <span className="ml-3 font-semibold text-primary">Weekly Marking</span>
+      <span className="ml-3 font-semibold text-primary">NTT POC</span>
 
       <div className="ml-auto flex items-center gap-2">
         <span className="text-sm text-muted-foreground hidden sm:block">{user?.userId}</span>

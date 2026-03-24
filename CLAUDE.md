@@ -70,6 +70,11 @@ source/
     └── auth-login-process.md    # 인증 전체 흐름 순서도
 ```
 
+## DB 문서 경로
+```
+/Users/sclee1115/Project/Dev/nttpoc/docu/docker/mysql/initdb/
+```
+
 ---
 
 ## 아키텍처 핵심 결정사항
@@ -130,6 +135,73 @@ POST /auth/logout                → RT revoke + 쿠키 삭제
 
 **6. 신규 컴포넌트는 `common/` 기준으로 작성**
 - `ui/` (Radix 래퍼)와 `common/` 혼용 중 — 신규 작성 시 `common/` 우선
+
+
+---
+
+## 다국어(i18n) 개발 규칙
+
+### 기본 언어 및 지원 언어
+- **기본 언어**: 일본어 (`ja`) — localStorage 미설정 시 자동 적용
+- **지원 언어**: `ja` / `en` / `ko` (이 순서로 UI 표시)
+- `fallbackLng: 'ja'`, `detection.order: ['localStorage']` 유지 확인 — navigator 감지 사용 안 함
+
+### 콘텐츠 언어 정책 (Content Language Policy)
+
+> **UI 언어와 콘텐츠 언어는 별개다.**
+
+| 구분 | 언어 | 설명 |
+|------|------|------|
+| UI 언어 | ja / en / ko 선택 | 메뉴, 버튼, 에러 메시지, 레이블 |
+| 콘텐츠 언어 | **일본어 고정** | DB에 저장된 데이터, 사용자 입력값 |
+
+- 이 시스템의 콘텐츠(DB 데이터)는 **일본어로 입력·저장**하는 것을 원칙으로 한다
+- UI를 영어·한국어로 전환해도 DB에서 불러온 데이터는 일본어로 표시된다
+- 이는 글로벌 B2B 시스템(SAP, Salesforce 등)의 표준 패턴이며 의도된 설계임
+- 자동번역(DeepL 등) 연동은 요구사항 확정 후 별도 검토 (POC 범위 외)
+- 로그인 화면에서 언어를 변경하면 콘텐츠 언어 안내 문구를 노출한다 (`ja` 선택 시 비표시)
+
+### 개발 워크플로우 — 기능 우선, i18n 후처리
+```
+1. 한국어로 구현   → 프론트 하드코딩(한국어) + 백엔드 한국어 메시지로 빠르게 개발
+2. 테스트 / 확정  → 기능 동작 검증, UI 문구 확정
+3. i18n 처리      → 문구 확정 후 일괄 다국어 변환 (아래 절차 참고)
+```
+> 기능 확정 전 i18n 작업 금지 — 문구 변경 시 번역 키까지 수정해야 하는 낭비 방지
+
+### i18n 처리 절차 (3단계)
+
+#### Backend
+1. `messages_ko.properties` 에 키 등록 (기존 하드코딩 → 키로 대체)
+2. `messages_en.properties`, `messages_ja.properties` 에 동일 키 번역 추가
+3. 코드에서 하드코딩 문자열 → `NttpocException(ErrorCode.XXX)` 또는 `MessageSource.getMessage(key, locale)` 로 교체
+   - 키 규칙: `error.{도메인}.{상세}` / `msg.{도메인}.{상세}` / `email.{유형}.{상세}`
+
+#### Frontend
+1. `src/i18n/locales/ko/{namespace}.json` 에 키 등록
+2. `en`, `ja` 동일 키 번역 추가
+3. 신규 네임스페이스라면 `src/types/i18n.d.ts` 에 import + resources 항목 추가
+4. 컴포넌트 하드코딩 → `const { t } = useTranslation('{namespace}')` + `t('key')` 로 교체
+   - 비컴포넌트(Context 등)에서는 `i18n.t('key', { ns: '...' })` 사용
+
+### 구조 한눈에 보기
+```
+Frontend                              Backend
+─────────────────────────────────     ─────────────────────────────────
+src/i18n/locales/ko/auth.json     ↔  messages_ko.properties
+src/i18n/locales/en/auth.json     ↔  messages_en.properties
+src/i18n/locales/ja/auth.json     ↔  messages_ja.properties
+
+언어 선택 → Accept-Language 헤더  →  AcceptHeaderLocaleResolver
+                                   →  LocaleContextHolder
+                                   →  MessageSource (에러/이메일 등)
+```
+
+### 새 도메인 모듈 추가 시 체크리스트
+- [ ] Backend: `messages_*.properties` 3개 파일에 신규 키 추가
+- [ ] Frontend: `src/i18n/locales/{ko,en,ja}/{도메인}.json` 파일 추가
+- [ ] Frontend: `src/types/i18n.d.ts` 에 새 네임스페이스 등록
+- [ ] 이메일/알림 발송 시: `LocaleContextHolder.getLocale()` 로 Locale 참조
 
 ---
 

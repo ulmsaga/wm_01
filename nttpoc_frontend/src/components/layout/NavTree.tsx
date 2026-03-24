@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import type { NavItem } from '@/types';
 
@@ -16,6 +17,8 @@ interface NavTreeItemProps {
  */
 function NavTreeItem({ item, level, onNavigate }: NavTreeItemProps) {
   const location = useLocation();
+  const { t } = useTranslation('common');
+  const label = t(item.label as Parameters<typeof t>[0], { defaultValue: item.label });
   const hasChildren = (item.children?.length ?? 0) > 0;
 
   // 현재 경로가 하위 항목에 포함되면 기본으로 열어둠
@@ -39,7 +42,7 @@ function NavTreeItem({ item, level, onNavigate }: NavTreeItemProps) {
           )}
         >
           {Icon && <Icon className="size-4 shrink-0" />}
-          <span className="flex-1 text-left truncate">{item.label}</span>
+          <span className="flex-1 text-left truncate">{label}</span>
           <ChevronDown
             className={cn('size-3.5 shrink-0 transition-transform', open && 'rotate-180')}
           />
@@ -71,7 +74,7 @@ function NavTreeItem({ item, level, onNavigate }: NavTreeItemProps) {
       }
     >
       {Icon && <Icon className="size-4 shrink-0" />}
-      <span className="truncate">{item.label}</span>
+      <span className="truncate">{label}</span>
     </NavLink>
   );
 }

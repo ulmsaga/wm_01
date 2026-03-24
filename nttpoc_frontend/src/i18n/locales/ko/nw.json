@@ -1,0 +1,88 @@
+{
+  "live": "LIVE",
+  "status": {
+    "normal": "정상",
+    "warning": "경고",
+    "critical": "장애",
+    "offline": "오프라인"
+  },
+  "topology": {
+    "title": "NW 토폴로지 감시",
+    "subTitle": "네트워크 토폴로지",
+    "clickHint": "클릭하면 노드 상세 표시",
+    "selectNode": "노드를 선택하세요",
+    "kpi": {
+      "total": "노드 총수",
+      "totalSub": "감시 대상",
+      "normal": "정상",
+      "normalSub": "운영 중",
+      "alert": "알람",
+      "alertSub": "요주의",
+      "fault": "장애",
+      "faultSub": "즉시 대응 필요"
+    },
+    "detail": {
+      "ip": "IP",
+      "layer": "레이어",
+      "cpu": "CPU"
+    },
+    "layer": {
+      "core": "코어",
+      "dist": "디스트리뷰션",
+      "edge": "엣지"
+    },
+    "alerts": {
+      "panelTitle": "활성 알람"
+    },
+    "linkUtil": {
+      "panelTitle": "링크 사용률 TOP5",
+      "down": "다운"
+    },
+    "spark": {
+      "traffic": "총 트래픽",
+      "latency": "지연 (RTT)",
+      "loss": "패킷 손실"
+    }
+  },
+  "digitalTwin": {
+    "title": "장비실 디지털 트윈",
+    "layoutTitle": "장비실 서버 레이아웃",
+    "selectDevice": "장비를 선택하세요",
+    "abnormal": {
+      "panelTitle": "이상 장비 감시",
+      "lv1": "Lv-1 알람",
+      "lv2": "Lv-2 알람",
+      "lv3": "Lv-3 알람",
+      "offline": "오프라인"
+    },
+    "overall": {
+      "panelTitle": "전체 가동 현황",
+      "cpuAvg": "CPU 평균",
+      "memAvg": "MEM 평균"
+    },
+    "deviceList": {
+      "panelTitle": "장비 가동 현황",
+      "name": "장비명",
+      "status": "상태",
+      "cpu": "CPU",
+      "uptime": "가동"
+    },
+    "detail": {
+      "deviceName": "장비명",
+      "year": "제조년도",
+      "responsible": "담당자",
+      "uptime": "가동 시간",
+      "load": "로드"
+    },
+    "ranking": {
+      "cpu": "CPU 사용률 랭킹",
+      "temp": "온도 랭킹"
+    },
+    "tab": {
+      "overview": "개요",
+      "security": "보안",
+      "device": "장비 관리",
+      "energy": "에너지"
+    }
+  }
+}

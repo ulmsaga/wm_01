@@ -71,6 +71,7 @@ class AuthServiceImplTest {
         return user;
     }
 
+    @SuppressWarnings("deprecation")
     private void mockDecryptToJson(String loginId, String password) throws Exception {
         String json = "{\"loginId\":\"" + loginId + "\",\"password\":\"" + password + "\"}";
         given(rsaKeyUtil.decrypt(anyString(), anyString())).willReturn(json);

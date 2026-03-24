@@ -1,11 +1,13 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import AuthLayout from '@/components/layout/AuthLayout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { login } from '@/api/auth/authApi';
 import { disconnectSse } from '@/api/sse/sseService';
 import { useAuth } from '@/context/AuthContext';
+import LanguageSelector from '@/components/common/LanguageSelector';
 
 interface ConfirmDialogProps {
   message: string;
@@ -13,16 +15,16 @@ interface ConfirmDialogProps {
   onCancel: () => void;
 }
 
-/** 중복 로그인 확인 모달 */
 function ConfirmDialog({ message, onConfirm, onCancel }: ConfirmDialogProps) {
+  const { t } = useTranslation('auth');
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-card dark:bg-slate-900 rounded-xl shadow-xl p-6 w-90 flex flex-col gap-4 border border-border dark:border-slate-700">
-        <h3 className="font-semibold text-base text-foreground dark:text-white">중복 로그인 확인</h3>
+        <h3 className="font-semibold text-base text-foreground dark:text-white">{t('login.duplicate.title')}</h3>
         <p className="text-sm text-muted-foreground dark:text-slate-300 whitespace-pre-line">{message}</p>
         <div className="flex gap-2 justify-end">
-          <Button variant="outline" size="sm" onClick={onCancel}>취소</Button>
-          <Button variant="destructive" size="sm" onClick={onConfirm}>기존 세션 종료 후 로그인</Button>
+          <Button variant="outline" size="sm" onClick={onCancel}>{t('action.cancel', { ns: 'common' })}</Button>
+          <Button variant="destructive" size="sm" onClick={onConfirm}>{t('login.duplicate.confirm')}</Button>
         </div>
       </div>
     </div>
@@ -37,7 +39,6 @@ interface AlertBannerProps {
   onClose?: () => void;
 }
 
-/** 인라인 알림 배너 */
 function AlertBanner({ message, type = 'info', onClose }: AlertBannerProps) {
   const styles =
     type === 'info'
@@ -63,6 +64,7 @@ interface FormState {
 function LoginPage() {
   const navigate = useNavigate();
   const { loginUser, loginAlert, clearLoginAlert } = useAuth();
+  const { t, i18n } = useTranslation('auth');
 
   const [form, setForm] = useState<FormState>({ loginId: '', loginPw: '' });
   const [saveId, setSaveId] = useState(false);
@@ -71,7 +73,8 @@ function LoginPage() {
   const [infoMsg, setInfoMsg] = useState('');
   const [confirmDialog, setConfirmDialog] = useState<{ message: string } | null>(null);
 
-  // 강제 로그아웃 알림 (AuthContext에서 전달) + 저장된 ID 복원
+  useEffect(() => { setErrorMsg(''); }, [i18n.language]);
+
   useEffect(() => {
     if (loginAlert) {
       setInfoMsg(loginAlert);
@@ -110,7 +113,7 @@ function LoginPage() {
     setErrorMsg('');
 
     if (!form.loginId || !form.loginPw) {
-      setErrorMsg('ID와 비밀번호를 입력하세요.');
+      setErrorMsg(t('login.error.required'));
       return;
     }
 
@@ -135,14 +138,14 @@ function LoginPage() {
             userId: response.data!.userId!,
             userName: response.data!.userName!,
           });
-          navigate('/home', { replace: true });
+          navigate('/nw/monitoring/digital-twin', { replace: true });
         }
       } else {
-        setErrorMsg(response?.message ?? '로그인에 실패했습니다.');
+        setErrorMsg(response?.message ?? t('login.error.failed'));
       }
     } catch (error: unknown) {
       const axiosError = error as { response?: { data?: { message?: string } } };
-      setErrorMsg(axiosError?.response?.data?.message ?? '로그인 처리 중 오류가 발생했습니다.');
+      setErrorMsg(axiosError?.response?.data?.message ?? t('login.error.network'));
       console.error(error);
     } finally {
       setLoading(false);
@@ -151,7 +154,7 @@ function LoginPage() {
 
   function handleConfirmLogin() {
     setConfirmDialog(null);
-    disconnectSse(); // 서버 kick 이벤트가 현재 창으로 수신되지 않도록 차단
+    disconnectSse();
     void handleSubmit(null, true);
   }
 
@@ -170,12 +173,15 @@ function LoginPage() {
           onSubmit={(e) => { void handleSubmit(e); }}
           className="w-[60vw] max-w-lg bg-card dark:bg-slate-900 rounded-xl shadow-lg dark:shadow-slate-900/50 p-8 flex flex-col gap-6 border border-border dark:border-slate-800 transition-colors"
         >
-          <h2 className="text-lg font-semibold text-center text-foreground dark:text-white">로그인</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-foreground dark:text-white">{t('login.title')}</h2>
+            <LanguageSelector />
+          </div>
 
           <div className="flex flex-col gap-1">
             <div className="flex items-center justify-between mb-1">
               <label htmlFor="loginId" className="text-sm font-medium text-foreground dark:text-slate-200">
-                ID
+                {t('login.id')}
               </label>
               <label className="flex items-center gap-1.5 cursor-pointer select-none">
                 <input
@@ -184,7 +190,7 @@ function LoginPage() {
                   onChange={handleSaveIdChange}
                   className="w-3.5 h-3.5 accent-primary"
                 />
-                <span className="text-xs text-muted-foreground">아이디 저장</span>
+                <span className="text-xs text-muted-foreground">{t('login.saveId')}</span>
               </label>
             </div>
             <Input
@@ -192,7 +198,7 @@ function LoginPage() {
               name="loginId"
               value={form.loginId}
               onChange={handleChange}
-              placeholder="아이디 입력"
+              placeholder={t('login.idPlaceholder')}
               autoComplete="username"
               className="h-7 text-sm bg-background dark:bg-slate-800 text-foreground dark:text-white border-border dark:border-slate-700 placeholder:text-muted-foreground"
             />
@@ -200,7 +206,7 @@ function LoginPage() {
 
           <div className="flex flex-col gap-1">
             <label htmlFor="loginPw" className="text-sm font-medium mb-1 text-foreground dark:text-slate-200">
-              비밀번호
+              {t('login.password')}
             </label>
             <Input
               id="loginPw"
@@ -208,7 +214,7 @@ function LoginPage() {
               type="password"
               value={form.loginPw}
               onChange={handleChange}
-              placeholder="비밀번호 입력"
+              placeholder={t('login.passwordPlaceholder')}
               autoComplete="current-password"
               className="h-7 text-sm bg-background dark:bg-slate-800 text-foreground dark:text-white border-border dark:border-slate-700 placeholder:text-muted-foreground"
             />
@@ -221,10 +227,16 @@ function LoginPage() {
             disabled={loading}
             className="w-full h-8 text-base font-semibold bg-primary text-primary-foreground hover:bg-primary-dark dark:bg-primary-light dark:text-slate-900 dark:hover:bg-primary transition"
           >
-            {loading ? '로그인 중...' : '로그인'}
+            {loading ? t('login.loading') : t('login.submit')}
           </Button>
 
           {infoMsg && <AlertBanner message={infoMsg} type="error" onClose={() => setInfoMsg('')} />}
+
+          {i18n.language !== 'ja' && (
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              ⓘ {t('contentLangNotice')}
+            </p>
+          )}
         </form>
       </div>
     </AuthLayout>

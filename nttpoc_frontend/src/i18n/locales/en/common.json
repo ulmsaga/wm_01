@@ -1,0 +1,13 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "logout": "Logout"
+  },
+  "home": {
+    "greeting": "Hello, {{name}}"
+  },
+  "action": {
+    "cancel": "Cancel",
+    "confirm": "Confirm"
+  }
+}

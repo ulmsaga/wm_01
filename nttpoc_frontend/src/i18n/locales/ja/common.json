@@ -1,0 +1,13 @@
+{
+  "nav": {
+    "dashboard": "ダッシュボード",
+    "logout": "ログアウト"
+  },
+  "home": {
+    "greeting": "こんにちは、{{name}}さん"
+  },
+  "action": {
+    "cancel": "キャンセル",
+    "confirm": "確認"
+  }
+}

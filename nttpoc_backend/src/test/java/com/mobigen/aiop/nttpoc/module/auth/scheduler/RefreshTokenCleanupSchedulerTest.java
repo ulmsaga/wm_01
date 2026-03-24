@@ -24,7 +24,6 @@ class RefreshTokenCleanupSchedulerTest {
 
     @Nested
     @DisplayName("deleteExpiredTokens")
-    @SuppressWarnings("unused")
     class DeleteExpiredTokens {
 
         @SuppressWarnings("unchecked")

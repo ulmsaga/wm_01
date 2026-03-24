@@ -1,0 +1,13 @@
+{
+  "nav": {
+    "dashboard": "대시보드",
+    "logout": "로그아웃"
+  },
+  "home": {
+    "greeting": "안녕하세요, {{name}}님"
+  },
+  "action": {
+    "cancel": "취소",
+    "confirm": "확인"
+  }
+}

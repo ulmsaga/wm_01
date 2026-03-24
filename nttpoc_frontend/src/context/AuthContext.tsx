@@ -1,10 +1,13 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import i18n from '@/i18n';
 import { getMe } from '@/api/auth/authApi';
+import { getMenu } from '@/api/menu/menuApi';
 import { connectSse, disconnectSse } from '@/api/sse/sseService';
-import type { User } from '@/types';
+import type { MenuItem, User } from '@/types';
 
 interface AuthContextValue {
   user: User | null;
+  menu: MenuItem[];
   isLoading: boolean;
   loginAlert: string;
   loginUser: (userData: User) => void;
@@ -16,6 +19,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [menu, setMenu] = useState<MenuItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loginAlert, setLoginAlert] = useState('');
 
@@ -26,7 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    */
   function handleSessionInvalidated() {
     disconnectSse();
-    setLoginAlert('다른 기기에서 로그인하여 현재 세션이 종료되었습니다.');
+    setLoginAlert(i18n.t('session.invalidated', { ns: 'auth' }));
     setUser(null);
   }
 
@@ -53,10 +57,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // 앱 최초 로드 시 /auth/me 로 세션 복원
   useEffect(() => {
     getMe()
-      .then((res) => {
+      .then(async (res) => {
         if (res?.data) {
           setUser(res.data);
           connectSse(handleSessionInvalidated, handleSseError);
+          getMenu().then(setMenu).catch(() => setMenu([]));
         }
       })
       .catch(() => {
@@ -70,11 +75,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   function loginUser(userData: User) {
     setUser(userData);
     connectSse(handleSessionInvalidated, handleSseError);
+    getMenu().then(setMenu).catch(() => setMenu([]));
   }
 
   function logoutUser() {
     disconnectSse();
     setUser(null);
+    setMenu([]);
   }
 
   function clearLoginAlert() {
@@ -82,7 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, loginUser, logoutUser, loginAlert, clearLoginAlert }}>
+    <AuthContext.Provider value={{ user, menu, isLoading, loginUser, logoutUser, loginAlert, clearLoginAlert }}>
       {children}
     </AuthContext.Provider>
   );

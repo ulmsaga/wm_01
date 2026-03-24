@@ -59,6 +59,7 @@ public class AuthServiceImpl implements AuthService {
         this.messageSource = messageSource;
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     @Transactional
     public LoginResult login(LoginRequest request, String userAgent, String ipAddr) {

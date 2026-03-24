@@ -1,26 +1,31 @@
 package com.mobigen.aiop.nttpoc.module.auth.service;
 
-import com.mobigen.aiop.nttpoc.core.exception.ErrorCode;
-import com.mobigen.aiop.nttpoc.core.exception.NttpocException;
-import com.mobigen.aiop.nttpoc.core.mail.EmailService;
-import com.mobigen.aiop.nttpoc.module.auth.dao.OtpDao;
-import com.mobigen.aiop.nttpoc.module.auth.service.impl.OtpServiceImpl;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willAnswer;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.verify;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.BDDMockito.*;
+import com.mobigen.aiop.nttpoc.core.exception.ErrorCode;
+import com.mobigen.aiop.nttpoc.core.exception.NttpocException;
+import com.mobigen.aiop.nttpoc.core.mail.EmailService;
+import com.mobigen.aiop.nttpoc.module.auth.dao.OtpDao;
+import com.mobigen.aiop.nttpoc.module.auth.service.impl.OtpServiceImpl;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("OtpServiceImpl")
@@ -66,6 +71,7 @@ class OtpServiceImplTest {
                     .isEqualTo(ErrorCode.SMS_NOT_SUPPORTED);
         }
 
+        @SuppressWarnings("unchecked")
         @Test
         @DisplayName("OTP 코드는 6자리 숫자")
         void otpCode_isSixDigits() {

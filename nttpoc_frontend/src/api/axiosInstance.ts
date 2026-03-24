@@ -1,4 +1,5 @@
 import axios from 'axios';
+import i18n from '@/i18n';
 
 declare module 'axios' {
   interface InternalAxiosRequestConfig {
@@ -16,7 +17,11 @@ const axiosInstance = axios.create({
 });
 
 axiosInstance.interceptors.request.use(
-  (config) => config,
+  (config) => {
+    // 현재 선택된 언어를 Accept-Language 헤더로 전송 → 백엔드 MessageSource 언어 결정
+    config.headers['Accept-Language'] = i18n.language ?? 'ko';
+    return config;
+  },
   (error) => Promise.reject(error)
 );
 

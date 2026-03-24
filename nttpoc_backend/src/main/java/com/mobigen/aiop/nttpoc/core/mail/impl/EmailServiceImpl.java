@@ -3,6 +3,8 @@ package com.mobigen.aiop.nttpoc.core.mail.impl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -14,33 +16,41 @@ import com.mobigen.aiop.nttpoc.core.mail.EmailService;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 
+import java.util.Locale;
+
 @Service
 public class EmailServiceImpl implements EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailServiceImpl.class);
 
     private final JavaMailSender mailSender;
+    private final MessageSource messageSource;
     private final String from;
 
     public EmailServiceImpl(JavaMailSender mailSender,
+                            MessageSource messageSource,
                             @Value("${app.mail.from}") String from) {
         this.mailSender = mailSender;
+        this.messageSource = messageSource;
         this.from = from;
     }
 
     @Override
     public void sendOtpEmail(String to, String otpCode, int expireMinutes) {
+        // 요청 스레드의 Locale (AcceptHeaderLocaleResolver 가 Accept-Language 헤더로 설정)
+        Locale locale = LocaleContextHolder.getLocale();
+
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
 
             helper.setFrom(from);
             helper.setTo(to);
-            helper.setSubject("[NTT-POC] 로그인 인증 코드 안내");
-            helper.setText(buildOtpHtml(otpCode, expireMinutes), true);
+            helper.setSubject(msg("email.otp.subject", locale));
+            helper.setText(buildOtpHtml(otpCode, expireMinutes, locale), true);
 
             mailSender.send(message);
-            log.info("[Email] OTP 발송 완료 to={}", to);
+            log.info("[Email] OTP 발송 완료 to={} locale={}", to, locale.getLanguage());
 
         } catch (MessagingException e) {
             log.error("[Email] OTP 발송 실패 to={}", to, e);
@@ -48,10 +58,17 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
-    private String buildOtpHtml(String otpCode, int expireMinutes) {
+    private String buildOtpHtml(String otpCode, int expireMinutes, Locale locale) {
+        String headerTitle = msg("email.otp.header.title", locale);
+        String greeting    = msg("email.otp.greeting",     locale);
+        String body        = msg("email.otp.body",         locale);
+        String expiry      = msg("email.otp.expiry",       locale, expireMinutes);
+        String ignore      = msg("email.otp.ignore",       locale);
+        String warning     = msg("email.otp.warning",      locale);
+
         return """
                 <!DOCTYPE html>
-                <html lang="ko">
+                <html>
                 <head>
                   <meta charset="UTF-8">
                   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -68,7 +85,7 @@ public class EmailServiceImpl implements EmailService {
                           <tr>
                             <td style="background:#7c3aed;padding:32px 40px;text-align:center;">
                               <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;
-                                         letter-spacing:-0.5px;">NTT-POC 인증 코드</h1>
+                                         letter-spacing:-0.5px;">%s</h1>
                             </td>
                           </tr>
 
@@ -76,11 +93,10 @@ public class EmailServiceImpl implements EmailService {
                           <tr>
                             <td style="padding:40px 40px 24px;">
                               <p style="margin:0 0 8px;color:#374151;font-size:15px;line-height:1.6;">
-                                안녕하세요.
+                                %s
                               </p>
                               <p style="margin:0 0 28px;color:#374151;font-size:15px;line-height:1.6;">
-                                로그인 2차 인증을 위한 코드입니다.<br>
-                                아래 코드를 인증 화면에 입력해 주세요.
+                                %s
                               </p>
 
                               <!-- OTP 코드 박스 -->
@@ -92,10 +108,10 @@ public class EmailServiceImpl implements EmailService {
 
                               <!-- 유효 시간 -->
                               <p style="margin:0 0 8px;color:#6b7280;font-size:13px;text-align:center;">
-                                이 코드는 발급 후 <strong style="color:#374151;">%d분</strong> 동안 유효합니다.
+                                %s
                               </p>
                               <p style="margin:0 0 28px;color:#6b7280;font-size:13px;text-align:center;">
-                                코드를 요청하지 않으셨다면 이 이메일을 무시해 주세요.
+                                %s
                               </p>
                             </td>
                           </tr>
@@ -104,7 +120,7 @@ public class EmailServiceImpl implements EmailService {
                           <tr>
                             <td style="background:#fef9c3;padding:16px 40px;border-top:1px solid #fde68a;">
                               <p style="margin:0;color:#92400e;font-size:12px;line-height:1.6;">
-                                ⚠ 이 코드는 본인만 사용하세요. NTT 직원은 절대 인증 코드를 요청하지 않습니다.
+                                %s
                               </p>
                             </td>
                           </tr>
@@ -124,6 +140,10 @@ public class EmailServiceImpl implements EmailService {
                   </table>
                 </body>
                 </html>
-                """.formatted(otpCode, expireMinutes);
+                """.formatted(headerTitle, greeting, body, otpCode, expiry, ignore, warning);
+    }
+
+    private String msg(String key, Locale locale, Object... args) {
+        return messageSource.getMessage(key, args, locale);
     }
 }

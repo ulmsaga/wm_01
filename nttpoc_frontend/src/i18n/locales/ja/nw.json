@@ -1,0 +1,88 @@
+{
+  "live": "LIVE",
+  "status": {
+    "normal": "正常",
+    "warning": "警告",
+    "critical": "障害",
+    "offline": "オフライン"
+  },
+  "topology": {
+    "title": "NW トポロジー監視",
+    "subTitle": "ネットワークトポロジー",
+    "clickHint": "クリックでノード詳細",
+    "selectNode": "ノードを選択してください",
+    "kpi": {
+      "total": "ノード総数",
+      "totalSub": "監視対象",
+      "normal": "正常",
+      "normalSub": "稼働中",
+      "alert": "アラート",
+      "alertSub": "要注意",
+      "fault": "障害",
+      "faultSub": "即時対応必要"
+    },
+    "detail": {
+      "ip": "IP",
+      "layer": "レイヤー",
+      "cpu": "CPU"
+    },
+    "layer": {
+      "core": "コア",
+      "dist": "ディストリビューション",
+      "edge": "エッジ"
+    },
+    "alerts": {
+      "panelTitle": "アクティブアラート"
+    },
+    "linkUtil": {
+      "panelTitle": "リンク使用率 TOP5",
+      "down": "DOWN"
+    },
+    "spark": {
+      "traffic": "総トラフィック",
+      "latency": "遅延 (RTT)",
+      "loss": "パケットロス"
+    }
+  },
+  "digitalTwin": {
+    "title": "機器室 デジタルツイン",
+    "layoutTitle": "機器室 サーバーレイアウト",
+    "selectDevice": "機器を選択してください",
+    "abnormal": {
+      "panelTitle": "異常機器監視",
+      "lv1": "Lv-1 アラート",
+      "lv2": "Lv-2 アラート",
+      "lv3": "Lv-3 アラート",
+      "offline": "オフライン"
+    },
+    "overall": {
+      "panelTitle": "全体稼働状況",
+      "cpuAvg": "CPU 平均",
+      "memAvg": "MEM 平均"
+    },
+    "deviceList": {
+      "panelTitle": "機器稼働状況",
+      "name": "機器名",
+      "status": "状態",
+      "cpu": "CPU",
+      "uptime": "稼働"
+    },
+    "detail": {
+      "deviceName": "機器名",
+      "year": "製造年",
+      "responsible": "担当者",
+      "uptime": "稼働時間",
+      "load": "ロード"
+    },
+    "ranking": {
+      "cpu": "CPU 使用率 ランキング",
+      "temp": "温度 ランキング"
+    },
+    "tab": {
+      "overview": "概況",
+      "security": "セキュリティ",
+      "device": "デバイス管理",
+      "energy": "エネルギー"
+    }
+  }
+}

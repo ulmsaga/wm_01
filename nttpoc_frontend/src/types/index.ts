@@ -19,3 +19,18 @@ export interface NavItem {
   path?: string;
   children?: NavItem[];
 }
+
+export interface MenuItem {
+  menuId: number;
+  parentId: number | null;
+  menuName: string;
+  menuPath: string | null;
+  icon: string | null;
+  canView: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
+  canDownload: boolean;
+  canUpload: boolean;
+  canUnmask: boolean;
+  children: MenuItem[];
+}
