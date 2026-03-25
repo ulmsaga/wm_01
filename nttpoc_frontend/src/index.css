@@ -162,18 +162,20 @@
 
 /* ─── Digital Twin: 드릴다운 화면 전환 애니메이션 ──────────────────── */
 @keyframes dt-zoom-in {
-  from { opacity: 0; transform: scale(1.05) translateY(10px); filter: blur(4px);  }
-  to   { opacity: 1; transform: scale(1)    translateY(0);    filter: blur(0);    }
+  0%   { opacity: 0;    transform: scale(1.22) translateY(24px);  filter: blur(10px) brightness(1.6); }
+  60%  { opacity: 1;    transform: scale(0.98) translateY(-3px);  filter: blur(1px)  brightness(1.0); }
+  100% { opacity: 1;    transform: scale(1)    translateY(0);     filter: blur(0)    brightness(1.0); }
 }
 @keyframes dt-zoom-back {
-  from { opacity: 0; transform: scale(0.96) translateY(-8px); filter: blur(4px);  }
-  to   { opacity: 1; transform: scale(1)    translateY(0);    filter: blur(0);    }
+  0%   { opacity: 0;    transform: scale(0.78) translateY(-20px); filter: blur(10px) brightness(0.5); }
+  60%  { opacity: 1;    transform: scale(1.02) translateY(3px);   filter: blur(1px)  brightness(1.0); }
+  100% { opacity: 1;    transform: scale(1)    translateY(0);     filter: blur(0)    brightness(1.0); }
 }
 
 /* 전진 (지도→빌딩, 빌딩→장비실) */
-.dt-anim-in   { animation: dt-zoom-in   0.42s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.dt-anim-in   { animation: dt-zoom-in   0.75s cubic-bezier(0.22, 1, 0.36, 1) both; }
 /* 후퇴 (장비실→빌딩, 빌딩→지도) */
-.dt-anim-back { animation: dt-zoom-back 0.38s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.dt-anim-back { animation: dt-zoom-back 0.65s cubic-bezier(0.22, 1, 0.36, 1) both; }
 
 /* ─── Base ───────────────────────────────────────────────────────── */
 *, *::before, *::after {
