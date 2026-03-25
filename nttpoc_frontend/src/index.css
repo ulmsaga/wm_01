@@ -160,6 +160,21 @@
   background-size: 28px 28px;
 }
 
+/* ─── Digital Twin: 드릴다운 화면 전환 애니메이션 ──────────────────── */
+@keyframes dt-zoom-in {
+  from { opacity: 0; transform: scale(1.05) translateY(10px); filter: blur(4px);  }
+  to   { opacity: 1; transform: scale(1)    translateY(0);    filter: blur(0);    }
+}
+@keyframes dt-zoom-back {
+  from { opacity: 0; transform: scale(0.96) translateY(-8px); filter: blur(4px);  }
+  to   { opacity: 1; transform: scale(1)    translateY(0);    filter: blur(0);    }
+}
+
+/* 전진 (지도→빌딩, 빌딩→장비실) */
+.dt-anim-in   { animation: dt-zoom-in   0.42s cubic-bezier(0.16, 1, 0.3, 1) both; }
+/* 후퇴 (장비실→빌딩, 빌딩→지도) */
+.dt-anim-back { animation: dt-zoom-back 0.38s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
 /* ─── Base ───────────────────────────────────────────────────────── */
 *, *::before, *::after {
   border-color: var(--border);

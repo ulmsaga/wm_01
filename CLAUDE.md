@@ -2,7 +2,7 @@
 
 ## 프로젝트 개요
 
-`weekly_marking` — 주간 채점 관리 시스템.
+`NTT POC` - EPC 통신 장비 품질 모니터링 및 분석, APP 품질 모니터링 및 분석
 RSA 암호화 → BCrypt 검증 → OTP 2차 인증 → JWT (HttpOnly 쿠키) 방식의 2단계 인증 구조.
 
 > 미완성 항목 및 작업 현황은 memory를 참조할 것.
@@ -69,6 +69,29 @@ source/
 └── docs/
     └── auth-login-process.md    # 인증 전체 흐름 순서도
 ```
+
+## docu 디렉토리 구조 (source/ 외부)
+```
+docu/
+├── design/
+│   └── nw/
+│       └── nw-digital-twin.md        # NW Digital Twin 화면 설계 문서
+└── docker/mysql/initdb/
+    ├── 00_grant.sql                  # DB 권한
+    ├── 01_schema.sql                 # 전체 스키마 (auth + menu/RBAC)
+    ├── 02_data.sql                   # 전체 초기 데이터 (TRUNCATE 포함, 멱등성 보장)
+    └── modules/                      # 모듈별 증분 DB 스크립트
+        └── nw/
+            └── digital-twin/
+                ├── README.md         # 변경 이력
+                ├── schema.sql        # nw_site / nw_building / nw_room / nw_device
+                └── data.sql          # 샘플 데이터
+```
+
+### DB 스크립트 관리 원칙
+- `initdb/01_schema.sql`, `02_data.sql` — 전체 재초기화용 (Docker init 시 자동 실행)
+- `initdb/modules/{모듈명}/` — 모듈 개발 중 증분 DDL·데이터 관리 (개발자 수동 적용)
+- 새 모듈 추가 시 `modules/{도메인}/{기능명}/` 디렉토리 생성 후 README.md 포함
 
 ## DB 문서 경로
 ```

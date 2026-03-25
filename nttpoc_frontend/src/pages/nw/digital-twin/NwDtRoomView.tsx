@@ -1,0 +1,530 @@
+import { useRef, useState } from 'react';
+import { Canvas, useFrame, ThreeEvent } from '@react-three/fiber';
+import { OrbitControls, Html, Edges, Line, Grid } from '@react-three/drei';
+import * as THREE from 'three';
+import { ArrowLeft, ChevronRight } from 'lucide-react';
+import { AlarmLevel, ALARM_COLOR, ALARM_LABEL, Center, FloorData } from './types';
+
+// ── 색상 ─────────────────────────────────────────────────
+const C_BG          = '#020c1e';
+const C_WIRE_BRIGHT = '#4fc3f7';
+const C_WIRE_MID    = '#1565c0';
+
+// ── 디바이스 상태 ─────────────────────────────────────────
+type DeviceStatus = 'normal' | 'warning' | 'critical';
+
+interface Device {
+  id:     string;        // MME#001 / SGW#001
+  type:   'MME' | 'SGW';
+  slot:   number;        // 0-3
+  status: DeviceStatus;
+}
+
+interface Rack {
+  id:      string;       // RACK#1801
+  row:     number;
+  col:     number;
+  devices: Device[];
+}
+
+function deviceStatusColor(s: DeviceStatus): string {
+  return s === 'normal' ? ALARM_COLOR['NR'] : s === 'warning' ? ALARM_COLOR['MJ'] : ALARM_COLOR['CR'];
+}
+
+function deviceStatusToAlarmLevel(s: DeviceStatus): AlarmLevel {
+  return s === 'normal' ? 'NR' : s === 'warning' ? 'MJ' : 'CR';
+}
+
+// ── 층 알람에 따른 디바이스 상태 결정 ─────────────────────
+function assignDeviceStatus(floorLevel: AlarmLevel, rackIdx: number, slotIdx: number): DeviceStatus {
+  if (floorLevel === 'NR') return 'normal';
+  const seed = rackIdx * 4 + slotIdx;
+  if (floorLevel === 'CR') {
+    if (seed % 8 === 0) return 'critical';
+    if (seed % 5 === 0) return 'warning';
+  }
+  if (floorLevel === 'MJ') {
+    if (seed % 6 === 0) return 'warning';
+  }
+  if (floorLevel === 'MN') {
+    if (seed % 9 === 0) return 'warning';
+  }
+  return 'normal';
+}
+
+// ── 랙/디바이스 데이터 생성 ───────────────────────────────
+const DEVICES_PER_RACK = 4;
+
+function generateRacks(center: Center, floor: FloorData): { racks: Rack[]; cols: number } {
+  const nocPrefix  = center.name.includes('品川') ? 1 : 2;
+  const floorNum   = parseInt(floor.id);
+  const isMME      = floorNum === 8;
+  const devType    = (isMME ? 'MME' : 'SGW') as 'MME' | 'SGW';
+  const totalDevs  = isMME ? 30 : 60;
+  const totalRacks = Math.ceil(totalDevs / DEVICES_PER_RACK);
+  const cols       = isMME ? 4 : 5;
+
+  const racks: Rack[] = [];
+  for (let i = 0; i < totalRacks; i++) {
+    const row    = Math.floor(i / cols);
+    const col    = i % cols;
+    const seq    = String(i + 1).padStart(2, '0');
+    const rackId = `RACK#${nocPrefix}${floorNum}${seq}`;
+
+    const devices: Device[] = [];
+    for (let s = 0; s < DEVICES_PER_RACK; s++) {
+      const devNum = i * DEVICES_PER_RACK + s + 1;
+      if (devNum > totalDevs) break;
+      devices.push({
+        id:     `${devType}#${String(devNum).padStart(3, '0')}`,
+        type:   devType,
+        slot:   s,
+        status: assignDeviceStatus(floor.level, i, s),
+      });
+    }
+    racks.push({ id: rackId, row, col, devices });
+  }
+  return { racks, cols };
+}
+
+// ── 3D 레이아웃 상수 ──────────────────────────────────────
+const RACK_W        = 0.80;
+const RACK_H        = 2.20;
+const RACK_D        = 1.45;
+const DEV_H         = 0.28;
+const DEV_GAP       = 0.008;
+const RACK_SPACING_X = 2.0;
+const RACK_SPACING_Z = 2.6;
+
+function rackPos(row: number, col: number, cols: number, rows: number): [number, number, number] {
+  const ox = -((cols - 1) / 2) * RACK_SPACING_X;
+  const oz = -((rows - 1) / 2) * RACK_SPACING_Z;
+  return [col * RACK_SPACING_X + ox, 0, row * RACK_SPACING_Z + oz];
+}
+
+// ── 깜빡이는 경고등 ───────────────────────────────────────
+function PulseLight({ color, intensity }: { color: string; intensity: number }) {
+  const ref = useRef<THREE.PointLight>(null!);
+  useFrame(({ clock }) => {
+    if (ref.current)
+      ref.current.intensity = intensity * (0.5 + 0.5 * Math.sin(clock.elapsedTime * 2.5));
+  });
+  return <pointLight ref={ref} color={color} intensity={intensity} distance={3} decay={2} />;
+}
+
+// ── 랙 3D — 파란 테두리만, 선택 효과 없음 ──────────────────
+function RackFrame({ rack, totalCols, totalRows }: {
+  rack:      Rack;
+  totalCols: number;
+  totalRows: number;
+}) {
+  const [px, , pz] = rackPos(rack.row, rack.col, totalCols, totalRows);
+
+  return (
+    <group position={[px, RACK_H / 2, pz]}>
+      <mesh>
+        <boxGeometry args={[RACK_W, RACK_H, RACK_D]} />
+        <meshBasicMaterial visible={false} />
+        <Edges threshold={15} color="#1a4a80" lineWidth={0.5} />
+      </mesh>
+
+      <Html position={[0, RACK_H / 2 + 0.28, 0]} center distanceFactor={18} style={{ pointerEvents: 'none' }}>
+        <span style={{ fontFamily: 'monospace', fontSize: '6px', color: '#1e3a55', userSelect: 'none', whiteSpace: 'nowrap' }}>
+          {rack.id}
+        </span>
+      </Html>
+
+      {rack.devices.some((d) => d.status === 'critical') && (
+        <group position={[0, RACK_H / 2 + 0.3, 0]}>
+          <PulseLight color={ALARM_COLOR['CR']} intensity={1.2} />
+        </group>
+      )}
+      {rack.devices.some((d) => d.status === 'warning') &&
+       !rack.devices.some((d) => d.status === 'critical') && (
+        <group position={[0, RACK_H / 2 + 0.3, 0]}>
+          <PulseLight color={ALARM_COLOR['MJ']} intensity={0.7} />
+        </group>
+      )}
+    </group>
+  );
+}
+
+// ── 알람 장비 펄스 fill ───────────────────────────────────
+function DeviceAlarmPulse({ color }: { color: string }) {
+  const ref = useRef<THREE.Mesh>(null!);
+  useFrame(({ clock }) => {
+    if (ref.current) {
+      (ref.current.material as THREE.MeshBasicMaterial).opacity =
+        0.10 + 0.12 * Math.sin(clock.elapsedTime * 2.5);
+    }
+  });
+  return (
+    <mesh ref={ref}>
+      <boxGeometry args={[RACK_W * 0.86, DEV_H * 0.80, RACK_D * 0.68]} />
+      <meshBasicMaterial color={color} transparent opacity={0.10} side={THREE.DoubleSide} />
+    </mesh>
+  );
+}
+
+// ── 디바이스 3D — 개별 선택 가능 ─────────────────────────
+function DeviceSlot3D({ device, rackRow, rackCol, totalCols, totalRows, isSelected, onSelect }: {
+  device:     Device;
+  rackRow:    number;
+  rackCol:    number;
+  totalCols:  number;
+  totalRows:  number;
+  isSelected: boolean;
+  onSelect:   () => void;
+}) {
+  const [isHovered, setIsHovered] = useState(false);
+
+  const [px, , pz] = rackPos(rackRow, rackCol, totalCols, totalRows);
+  const slotY   = device.slot * (DEV_H + DEV_GAP) + DEV_GAP + DEV_H / 2 - RACK_H / 2;
+  const isAlarm = device.status !== 'normal';
+  const edgeCol = isAlarm ? deviceStatusColor(device.status) : C_WIRE_BRIGHT;
+  const fillCol = isAlarm ? deviceStatusColor(device.status) : ALARM_COLOR['NR'];
+  const level   = deviceStatusToAlarmLevel(device.status);
+
+  // 호버 시 엣지: 알람은 흰색으로, NR은 밝은 시안으로
+  const hoverEdgeCol = isAlarm ? '#ffffff' : '#80d8ff';
+
+  // 패널 방향: 우측 절반 장비는 왼쪽으로 (화면 밖 이탈 방지)
+  const isRightHalf = rackCol >= totalCols / 2;
+  const LINE_START: [number, number, number] = [isRightHalf ? -RACK_W * 0.44 : RACK_W * 0.44, 0, 0];
+  const PANEL_POS:  [number, number, number] = [isRightHalf ? -3.6 : 3.6, 1.6, 0];
+
+  const currentEdge  = isSelected ? fillCol : isHovered ? hoverEdgeCol : edgeCol;
+  const currentWidth = isSelected || isHovered ? 1.4 : 0.6;
+
+  return (
+    <group
+      position={[px, RACK_H / 2 + slotY, pz]}
+      onClick={(e: ThreeEvent<MouseEvent>) => { e.stopPropagation(); onSelect(); }}
+      onPointerOver={(e) => { e.stopPropagation(); setIsHovered(true); document.body.style.cursor = 'pointer'; }}
+      onPointerOut={() =>  { setIsHovered(false); document.body.style.cursor = 'auto'; }}
+    >
+      {/* 알람 펄스 fill — 비선택 알람 장비 */}
+      {isAlarm && !isSelected && (
+        <DeviceAlarmPulse color={edgeCol} />
+      )}
+
+      {/* 선택 시 배경 fill */}
+      {isSelected && (
+        <mesh>
+          <boxGeometry args={[RACK_W * 0.86, DEV_H * 0.80, RACK_D * 0.68]} />
+          <meshBasicMaterial color={fillCol} transparent opacity={0.38} side={THREE.FrontSide} />
+        </mesh>
+      )}
+
+      {/* 디바이스 엣지 */}
+      <mesh>
+        <boxGeometry args={[RACK_W * 0.86, DEV_H * 0.80, RACK_D * 0.68]} />
+        <meshBasicMaterial visible={false} />
+        <Edges threshold={15} color={currentEdge} lineWidth={currentWidth} />
+      </mesh>
+
+      {/* LED 도트 */}
+      <mesh position={[RACK_W * 0.28, 0, RACK_D * 0.35]}>
+        <circleGeometry args={[0.022, 8]} />
+        <meshBasicMaterial color={currentEdge} />
+      </mesh>
+
+      {/* ── Hover: 플로팅 ID 라벨 ── */}
+      {isHovered && !isSelected && (
+        <Html position={[0, DEV_H * 0.65, RACK_D * 0.38]} center style={{ pointerEvents: 'none' }}>
+          <div style={{
+            fontFamily:   'monospace',
+            fontSize:     '11px',
+            fontWeight:   700,
+            color:        hoverEdgeCol,
+            background:   'rgba(2,12,30,0.90)',
+            border:       `1px solid ${hoverEdgeCol}80`,
+            borderRadius: '4px',
+            padding:      '2px 8px',
+            whiteSpace:   'nowrap',
+            boxShadow:    `0 0 10px ${hoverEdgeCol}40`,
+            letterSpacing: '0.5px',
+          }}>
+            {device.id}
+          </div>
+        </Html>
+      )}
+
+      {/* ── 선택: 글로우 도트 + 연결선 + 정보 패널 ── */}
+      {isSelected && (
+        <>
+          {/* 연결 기점 글로우 도트 */}
+          <mesh position={LINE_START}>
+            <sphereGeometry args={[0.06, 10, 10]} />
+            <meshBasicMaterial color={fillCol} />
+          </mesh>
+
+          {/* 연결선 */}
+          <Line
+            points={[LINE_START, PANEL_POS]}
+            color={fillCol}
+            lineWidth={0.9}
+            transparent
+            opacity={0.65}
+          />
+
+          {/* 정보 패널 */}
+          <Html position={PANEL_POS} center style={{ pointerEvents: 'none' }}>
+            <div style={{
+              background:   'rgba(2,10,28,0.94)',
+              border:       `1px solid ${fillCol}60`,
+              borderRadius: '6px',
+              padding:      '10px 14px',
+              minWidth:     '190px',
+              boxShadow:    `0 0 20px ${fillCol}25, inset 0 0 20px rgba(0,0,0,0.5)`,
+              userSelect:   'none',
+            }}>
+              {/* 헤더 */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', borderBottom: `1px solid ${fillCol}30`, paddingBottom: '6px' }}>
+                <span style={{ fontFamily: 'monospace', fontSize: '13px', fontWeight: 700, color: fillCol }}>
+                  {device.id}
+                </span>
+                <span style={{
+                  fontSize: '9px', fontWeight: 700,
+                  padding: '1px 6px', borderRadius: '3px',
+                  color: fillCol, background: `${fillCol}20`, border: `1px solid ${fillCol}40`,
+                }}>
+                  {ALARM_LABEL[level]}
+                </span>
+              </div>
+
+              {/* 알람 정보 */}
+              {isAlarm ? (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px 14px' }}>
+                  {([
+                    { label: 'CALL TYPE',  value: 'ATTACH' },
+                    { label: 'KPI',        value: '성공율'  },
+                    { label: '상태',        value: '낮음'   },
+                    { label: '값',          value: '40%'   },
+                    { label: '연속발생',     value: '5회'   },
+                  ] as { label: string; value: string }[]).map(({ label, value }) => (
+                    <div key={label}>
+                      <div style={{ fontSize: '8px', color: '#475569', marginBottom: '1px', fontFamily: 'monospace' }}>{label}</div>
+                      <div style={{ fontSize: '10px', fontWeight: 600, color: fillCol, fontFamily: 'monospace' }}>{value}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ fontSize: '10px', color: ALARM_COLOR['NR'], fontFamily: 'monospace' }}>
+                  ● 정상 운용 중
+                </div>
+              )}
+            </div>
+          </Html>
+        </>
+      )}
+    </group>
+  );
+}
+
+// ── 장비실 환경 ───────────────────────────────────────────
+function RoomEnvironment({ roomW, roomD }: { roomW: number; roomD: number }) {
+  const hw = roomW / 2, hd = roomD / 2;
+  const ROOM_H = 4.0;
+  const floor: [number,number,number][] = [[-hw,0,-hd],[hw,0,-hd],[hw,0,hd],[-hw,0,hd],[-hw,0,-hd]];
+  const top:   [number,number,number][] = floor.map(([x,,z]) => [x, ROOM_H, z]);
+  const pillars = [[-hw,-hd],[hw,-hd],[hw,hd],[-hw,hd]] as [number,number][];
+
+  return (
+    <group>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
+        <planeGeometry args={[roomW, roomD]} />
+        <meshBasicMaterial color="#061828" transparent opacity={0.85} />
+      </mesh>
+      <Grid
+        position={[0, 0.002, 0]}
+        cellSize={RACK_SPACING_X}
+        cellThickness={0.4}
+        cellColor="#0e4060"
+        sectionSize={0}
+        fadeDistance={35}
+        fadeStrength={1.2}
+        args={[roomW, roomD]}
+      />
+      <Line points={floor} color={C_WIRE_BRIGHT} lineWidth={1.2} transparent opacity={0.5} />
+      <Line points={top}   color={C_WIRE_BRIGHT} lineWidth={0.8} transparent opacity={0.25} />
+      {pillars.map(([x, z], i) => (
+        <Line key={i} points={[[x,0,z],[x,ROOM_H,z]]} color={C_WIRE_BRIGHT} lineWidth={0.9} transparent opacity={0.38} />
+      ))}
+      <mesh position={[0, ROOM_H / 2, -hd]}>
+        <planeGeometry args={[roomW, ROOM_H]} />
+        <meshBasicMaterial color={C_WIRE_MID} transparent opacity={0.07} side={THREE.FrontSide} />
+      </mesh>
+    </group>
+  );
+}
+
+// ── 3D 씬 ─────────────────────────────────────────────────
+function RoomScene({ racks, cols, rows, selectedDeviceId, onDeviceSelect }: {
+  racks:           Rack[];
+  cols:            number;
+  rows:            number;
+  selectedDeviceId: string | null;
+  onDeviceSelect:  (id: string) => void;
+}) {
+  const roomW = cols * RACK_SPACING_X + 4;
+  const roomD = rows * RACK_SPACING_Z + 4;
+
+  return (
+    <>
+      <ambientLight intensity={0.12} color="#0e2d45" />
+      <pointLight position={[0, 6, 0]} color={C_WIRE_BRIGHT} intensity={0.5} distance={25} decay={1.5} />
+
+      <RoomEnvironment roomW={roomW} roomD={roomD} />
+
+      {racks.map((rack) => (
+        <group key={rack.id}>
+          <RackFrame rack={rack} totalCols={cols} totalRows={rows} />
+          {/* 랙 내 디바이스 개별 */}
+          {rack.devices.map((dev) => (
+            <DeviceSlot3D
+              key={dev.id}
+              device={dev}
+              rackRow={rack.row}
+              rackCol={rack.col}
+              totalCols={cols}
+              totalRows={rows}
+              isSelected={dev.id === selectedDeviceId}
+              onSelect={() => onDeviceSelect(dev.id)}
+            />
+          ))}
+        </group>
+      ))}
+
+      <OrbitControls
+        target={[0, 1.1, 0]}
+        minDistance={3}
+        maxDistance={30}
+        maxPolarAngle={Math.PI / 2.05}
+        enablePan={false}
+        enableDamping
+        dampingFactor={0.06}
+      />
+    </>
+  );
+}
+
+// ── 하단 정보 패널 ────────────────────────────────────────
+function DeviceInfoPanel({ device, rackId }: { device: Device | null; rackId: string | null }) {
+  const level  = device ? deviceStatusToAlarmLevel(device.status) : 'NR';
+  const col    = device ? deviceStatusColor(device.status) : '#1e293b';
+  const border = device ? `${col}50` : '#1e293b';
+
+  return (
+    <div
+      className="shrink-0 mx-4 mb-3 rounded-xl border px-4 py-2.5"
+      style={{ borderColor: border, backgroundColor: device ? `${col}08` : 'transparent', minHeight: '52px' }}
+    >
+      {device ? (
+        <div className="flex items-center gap-3">
+          {/* 디바이스 ID + 소속 랙 */}
+          <div className="shrink-0">
+            <p className="font-mono text-sm font-bold" style={{ color: col }}>{device.id}</p>
+            <p className="font-mono text-[10px] text-slate-500 mt-0.5">{rackId}</p>
+          </div>
+
+          <div className="w-px h-8 bg-slate-700/60 shrink-0" />
+
+          {/* 알람 등급 */}
+          <span
+            className="text-[10px] font-bold px-2 py-0.5 rounded shrink-0"
+            style={{
+              color:           col,
+              backgroundColor: `${col}18`,
+              border:          `1px solid ${col}40`,
+            }}
+          >
+            {ALARM_LABEL[level]}
+          </span>
+
+          <div className="w-px h-8 bg-slate-700/60 shrink-0" />
+
+          {/* 알람 상세 — 추후 SSE 연동 후 실데이터로 교체 */}
+          <div className="flex-1 grid grid-cols-4 gap-2 min-w-0">
+            {[
+              { label: 'CALL TYPE', value: device.status !== 'normal' ? 'ATTACH' : '—' },
+              { label: 'KPI',       value: device.status !== 'normal' ? '성공율' : '—' },
+              { label: '상태',       value: device.status !== 'normal' ? '낮음'  : '—' },
+              { label: '연속발생',   value: device.status !== 'normal' ? '5회'   : '—' },
+            ].map(({ label, value }) => (
+              <div key={label} className="flex flex-col gap-0.5">
+                <span className="text-[9px] text-slate-500 uppercase tracking-wide">{label}</span>
+                <span className="text-xs font-semibold" style={{ color: device.status !== 'normal' ? col : '#475569' }}>
+                  {value}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+// ── 메인 컴포넌트 ─────────────────────────────────────────
+interface Props {
+  center: Center;
+  floor:  FloorData;
+  onBack: () => void;
+}
+
+export default function NwDtRoomView({ center, floor, onBack }: Props) {
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
+  const { racks, cols } = generateRacks(center, floor);
+  const rows = Math.ceil(racks.length / cols);
+
+  const selectedDevice = racks.flatMap((r) => r.devices).find((d) => d.id === selectedDeviceId) ?? null;
+  const selectedRackId = racks.find((r) => r.devices.some((d) => d.id === selectedDeviceId))?.id ?? null;
+
+  const camDist = cols * 1.6;
+
+  return (
+    <div className="flex flex-col h-full overflow-hidden" style={{ background: C_BG }}>
+
+      {/* 브레드크럼 */}
+      <div className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 border-b border-slate-800/60 text-xs">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1 text-slate-500 hover:text-cyan-400 transition-colors"
+        >
+          <ArrowLeft className="size-3.5" />
+          빌딩
+        </button>
+        <ChevronRight className="size-3 text-slate-700" />
+        <span className="text-slate-400">{center.name}</span>
+        <ChevronRight className="size-3 text-slate-700" />
+        <span className="font-mono" style={{ color: C_WIRE_BRIGHT }}>{floor.id}</span>
+        <ChevronRight className="size-3 text-slate-700" />
+        <span className="text-slate-300 font-medium">{floor.name}</span>
+        <span className="ml-auto font-mono text-[10px] text-slate-500">
+          RACK × {racks.length}&nbsp;|&nbsp;{floor.id === '8F' ? 'MME' : 'SGW'} × {floor.id === '8F' ? 30 : 60}
+        </span>
+      </div>
+
+      {/* 3D 캔버스 */}
+      <div className="flex-1 min-h-0 mx-4 my-2 rounded-xl overflow-hidden border border-slate-800/40">
+        <Canvas
+          camera={{ position: [camDist, camDist * 0.7, camDist], fov: 50 }}
+          gl={{ antialias: true, alpha: false }}
+          style={{ background: C_BG }}
+        >
+          <RoomScene
+            racks={racks}
+            cols={cols}
+            rows={rows}
+            selectedDeviceId={selectedDeviceId}
+            onDeviceSelect={(id) => setSelectedDeviceId((prev) => prev === id ? null : id)}
+          />
+        </Canvas>
+      </div>
+
+      {/* 디바이스 정보 패널 */}
+      <DeviceInfoPanel device={selectedDevice} rackId={selectedRackId} />
+    </div>
+  );
+}
