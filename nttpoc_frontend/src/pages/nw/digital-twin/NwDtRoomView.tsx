@@ -21,7 +21,7 @@ new THREE.TextureLoader().load(BG_IMAGE, (tex) => {
 });
 
 // ── 디바이스 상태 ─────────────────────────────────────────
-type DeviceStatus = 'normal' | 'warning' | 'critical';
+type DeviceStatus = 'normal' | 'minor' | 'warning' | 'critical';
 
 interface Device {
   id:     string;        // MME#001 / SGW#001
@@ -38,26 +38,35 @@ interface Rack {
 }
 
 function deviceStatusColor(s: DeviceStatus): string {
-  return s === 'normal' ? ALARM_COLOR['NR'] : s === 'warning' ? ALARM_COLOR['MJ'] : ALARM_COLOR['CR'];
+  if (s === 'critical') return ALARM_COLOR['CR'];
+  if (s === 'warning')  return ALARM_COLOR['MJ'];
+  if (s === 'minor')    return ALARM_COLOR['MN'];
+  return ALARM_COLOR['NR'];
 }
 
 function deviceStatusToAlarmLevel(s: DeviceStatus): AlarmLevel {
-  return s === 'normal' ? 'NR' : s === 'warning' ? 'MJ' : 'CR';
+  if (s === 'critical') return 'CR';
+  if (s === 'warning')  return 'MJ';
+  if (s === 'minor')    return 'MN';
+  return 'NR';
 }
 
 // ── 층 알람에 따른 디바이스 상태 결정 ─────────────────────
+// 층 레벨 = 해당 층 장비 최고 등급. CR층은 CR/MJ/MN 혼재, MJ층은 MJ/MN 혼재.
 function assignDeviceStatus(floorLevel: AlarmLevel, rackIdx: number, slotIdx: number): DeviceStatus {
   if (floorLevel === 'NR') return 'normal';
   const seed = rackIdx * 4 + slotIdx;
   if (floorLevel === 'CR') {
-    if (seed % 8 === 0) return 'critical';
-    if (seed % 5 === 0) return 'warning';
+    if (seed % 20 === 3) return 'critical';  // CR: 소수 (~1-2건)
+    if (seed % 8  === 1) return 'warning';   // MJ: 중간 (~3-4건)
+    if (seed % 5  === 0) return 'minor';     // MN: 좀 더 많이 (~5-6건)
   }
   if (floorLevel === 'MJ') {
-    if (seed % 6 === 0) return 'warning';
+    if (seed % 11 === 2) return 'warning';   // MJ: 중간
+    if (seed % 7  === 1) return 'minor';     // MN: 좀 더 많이
   }
   if (floorLevel === 'MN') {
-    if (seed % 9 === 0) return 'warning';
+    if (seed % 8  === 3) return 'minor';     // MN: 소수
   }
   return 'normal';
 }
@@ -155,6 +164,13 @@ function RackFrame({ rack, totalCols, totalRows }: {
           <PulseLight color={ALARM_COLOR['MJ']} intensity={0.7} />
         </group>
       )}
+      {rack.devices.some((d) => d.status === 'minor') &&
+       !rack.devices.some((d) => d.status === 'warning') &&
+       !rack.devices.some((d) => d.status === 'critical') && (
+        <group position={[0, RACK_H / 2 + 0.3, 0]}>
+          <PulseLight color={ALARM_COLOR['MN']} intensity={0.5} />
+        </group>
+      )}
     </group>
   );
 }
@@ -199,10 +215,13 @@ function DeviceSlot3D({ device, rackRow, rackCol, totalCols, totalRows, isSelect
   // 호버 시 엣지: 알람은 흰색으로, NR은 밝은 시안으로
   const hoverEdgeCol = isAlarm ? '#ffffff' : '#80d8ff';
 
-  // 패널 방향: 우측 절반 장비는 왼쪽으로 (화면 밖 이탈 방지)
+  // 패널 방향: 좌측 rack → 우측 상단, 우측 rack → 좌측 상단
+  // (패널이 항상 화면 중앙 방향으로 확장 → 잘림 방지)
   const isRightHalf = rackCol >= totalCols / 2;
-  const LINE_START: [number, number, number] = [isRightHalf ? -RACK_W * 0.44 : RACK_W * 0.44, 0, 0];
-  const PANEL_POS:  [number, number, number] = [isRightHalf ? -3.6 : 3.6, 1.6, 0];
+  const LINE_START: [number, number, number] = [isRightHalf ? -RACK_W * 0.44 : RACK_W * 0.44, DEV_H * 0.45, 0];
+  const PANEL_POS:  [number, number, number] = [isRightHalf ? -1.4 : 1.4, 1.6, 0];
+  // anchor: 우측 rack → 패널 우하단 기준(왼쪽 위로 확장), 좌측 rack → 패널 좌하단 기준(오른쪽 위로 확장)
+  const panelTransform = isRightHalf ? 'translate(-100%, -100%)' : 'translateY(-100%)';
 
   const currentEdge  = isSelected ? fillCol : isHovered ? hoverEdgeCol : edgeCol;
   const currentWidth = isSelected || isHovered ? 1.4 : 0.6;
@@ -267,23 +286,24 @@ function DeviceSlot3D({ device, rackRow, rackCol, totalCols, totalRows, isSelect
       {/* ── 선택: 글로우 도트 + 연결선 + 정보 패널 ── */}
       {isSelected && (
         <>
-          {/* 연결 기점 글로우 도트 */}
-          <mesh position={LINE_START}>
+          {/* 연결 기점 글로우 도트 — 항상 앞에 보이도록 depthTest:false */}
+          <mesh position={LINE_START} renderOrder={10}>
             <sphereGeometry args={[0.06, 10, 10]} />
-            <meshBasicMaterial color={fillCol} />
+            <meshBasicMaterial color={fillCol} depthTest={false} />
           </mesh>
 
-          {/* 연결선 */}
+          {/* 연결선 — depthTest:false로 다른 오브젝트에 가려지지 않게 */}
           <Line
             points={[LINE_START, PANEL_POS]}
             color={fillCol}
             lineWidth={0.9}
             transparent
             opacity={0.65}
+            depthTest={false}
           />
 
-          {/* 정보 패널 */}
-          <Html position={PANEL_POS} center style={{ pointerEvents: 'none' }}>
+          {/* 정보 패널 — center 제거, panelTransform으로 anchor 설정 */}
+          <Html position={PANEL_POS} style={{ pointerEvents: 'none', transform: panelTransform }}>
             <div style={{
               background:   'rgba(2,10,28,0.94)',
               border:       `1px solid ${fillCol}60`,

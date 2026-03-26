@@ -2,10 +2,10 @@
 export type AlarmLevel = 'NR' | 'MN' | 'MJ' | 'CR';
 
 export const ALARM_COLOR: Record<AlarmLevel, string> = {
-  NR: '#22c55e',  // 초록  — Normal
-  MN: '#facc15',  // 노랑  — Minor
-  MJ: '#f97316',  // 주황  — Major
-  CR: '#ef4444',  // 빨강  — Critical
+  NR: '#22c55e',  // 초록       — Normal
+  MN: '#facc15',  // 노랑       — Minor
+  MJ: '#fb923c',  // 밝은 주황  — Major    (orange-400: 노랑과 빨강 사이, 명확한 주황)
+  CR: '#f43f5e',  // 장밋빛 빨강 — Critical (rose-500: 주황과 확실히 구분되는 빨강-분홍)
 };
 
 export const ALARM_LABEL: Record<AlarmLevel, string> = {
@@ -24,7 +24,7 @@ export interface Center {
 }
 
 export const CENTERS: Center[] = [
-  { name: '大阪南港 NOC', value: [135.4210, 34.6407, 0], level: 'MJ', desc: '서일본 담당 오사카난코 NOC | 西日本 担当 · バックアップNOC (住之江区南港北1-9-9)' },
+  { name: '大阪南港 NOC', value: [135.4210, 34.6407, 0], level: 'CR', desc: '서일본 담당 오사카난코 NOC | 西日本 担当 · バックアップNOC (住之江区南港北1-9-9)' },
   { name: '品川 NOC',    value: [139.7372, 35.6333, 0], level: 'NR', desc: '동일본 담당 시나가와 NOC | 東日本 担当 · メインNOC (港区港南2-1-65)' },
 ];
 

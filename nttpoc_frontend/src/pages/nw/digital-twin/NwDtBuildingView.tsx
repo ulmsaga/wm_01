@@ -62,7 +62,12 @@ function makeFloors(alarmOverrides: Partial<Record<string, AlarmLevel>> = {}): F
 
 const BUILDING_FLOORS: Record<string, FloorData[]> = {
   '品川 NOC':    makeFloors(),
-  '大阪南港 NOC': makeFloors({ '8F': 'MJ' }),
+  // 관리 대상 장비실은 8F·9F만 — 나머지 층은 NR
+  // 층 레벨 = 해당 층 장비 중 최고 등급 (CR > MJ > MN)
+  '大阪南港 NOC': makeFloors({
+    '8F': 'CR',  // 장비실 A — CR/MJ/MN 장비 혼재, 최고등급 CR
+    '9F': 'MJ',  // 장비실 B — MJ/MN 장비 혼재, 최고등급 MJ
+  }),
 };
 
 // ── 색상 팔레트 ───────────────────────────────────────────
