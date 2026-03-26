@@ -3,8 +3,8 @@ package com.mobigen.aiop.nttpoc.module.menu.dto;
 import java.util.List;
 
 public record MenuResponse(
-        int menuId,
-        Integer parentId,
+        long menuId,
+        Long parentId,
         String menuName,
         String menuPath,
         String icon,

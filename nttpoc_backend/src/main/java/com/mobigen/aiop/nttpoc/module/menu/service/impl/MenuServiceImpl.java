@@ -30,7 +30,7 @@ public class MenuServiceImpl implements MenuService {
         List<Map<String, Object>> rows = menuDao.selectMenuByUserSeq(userSeq);
 
         // 1단계: flat 결과 → 노드 맵 (insertion order 유지 = DB sort_order 순)
-        Map<Integer, MenuNode> nodeMap = new LinkedHashMap<>();
+        Map<Long, MenuNode> nodeMap = new LinkedHashMap<>();
         for (Map<String, Object> row : rows) {
             MenuNode node = new MenuNode(row);
             nodeMap.put(node.menuId, node);
@@ -93,16 +93,16 @@ public class MenuServiceImpl implements MenuService {
 
     private static class MenuNode {
         final Map<String, Object> raw;
-        final int menuId;
-        final Integer parentId;
+        final long menuId;
+        final Long parentId;
         final int sortOrder;
         final List<MenuNode> children = new ArrayList<>();
 
         MenuNode(Map<String, Object> raw) {
             this.raw = raw;
-            this.menuId = ((Number) raw.get("MENU_ID")).intValue();
+            this.menuId = ((Number) raw.get("MENU_ID")).longValue();
             Object pid = raw.get("PARENT_ID");
-            this.parentId = pid != null ? ((Number) pid).intValue() : null;
+            this.parentId = pid != null ? ((Number) pid).longValue() : null;
             this.sortOrder = ((Number) raw.get("SORT_ORDER")).intValue();
         }
     }

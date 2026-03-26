@@ -159,7 +159,7 @@ export default function NwDigitalTwinPage() {
           </div>
         </div>
 
-        {/* ── 우: NOC 패널 (NOC 수에 따라 균등 분할) ── */}
+        {/* ── 우: NOC 패널 ── */}
         <div className="w-135 shrink-0 flex flex-col gap-3 p-3 border-l border-slate-800 overflow-y-auto">
           {CENTERS.map((c) => (
             <div key={c.name} className="flex-1 min-h-0">

@@ -26,7 +26,7 @@ class MenuServiceImplTest {
     // ── 헬퍼 ────────────────────────────────────────────────────────────────
 
     /** DB 조회 결과 row 생성 (HashMap — null value 허용, 권한 기본값: canView/canDownload=true) */
-    private java.util.Map<String, Object> row(int menuId, Integer parentId, String name,
+    private java.util.Map<String, Object> row(long menuId, Long parentId, String name,
                                               String path, String icon, int sortOrder) {
         java.util.Map<String, Object> m = new java.util.HashMap<>();
         m.put("MENU_ID",      menuId);
@@ -85,8 +85,8 @@ class MenuServiceImplTest {
         void nestedRows_buildsCorrectTree() {
             given(menuDao.selectMenuByUserSeq(1L)).willReturn(List.of(
                     row(1,  null, "NW",       null,              "icon-nw",      1),
-                    row(2,  1,    "감시",     null,              null,            1),
-                    row(3,  2,    "NW 감시",  "/nw/monitoring",  "icon-monitor", 1)
+                    row(2L, 1L,   "감시",     null,              null,            1),
+                    row(3L, 2L,   "NW 감시",  "/nw/monitoring",  "icon-monitor", 1)
             ));
 
             List<MenuResponse> result = menuService.getMenuTree(1L);
@@ -111,10 +111,10 @@ class MenuServiceImplTest {
         void sortOrder_siblingsOrdered() {
             given(menuDao.selectMenuByUserSeq(1L)).willReturn(List.of(
                     row(1,    null, "NW",       null,           "icon-nw",    1),
-                    row(4,    1,    "분석",     null,           null,          2),
-                    row(2,    1,    "감시",     null,           null,          1),
-                    row(5,    4,    "KPI 분석", "/nw/kpi",     "icon-kpi",    1),
-                    row(6,    4,    "CAUSE",    "/nw/cause",   "icon-cause",  2)
+                    row(4L,   1L,   "분석",     null,           null,          2),
+                    row(2L,   1L,   "감시",     null,           null,          1),
+                    row(5L,   4L,   "KPI 분석", "/nw/kpi",     "icon-kpi",    1),
+                    row(6L,   4L,   "CAUSE",    "/nw/cause",   "icon-cause",  2)
             ));
 
             List<MenuResponse> result = menuService.getMenuTree(1L);
@@ -186,7 +186,7 @@ class MenuServiceImplTest {
         @DisplayName("존재하지 않는 parentId 참조 → 고아 노드 제외")
         void orphanNode_excluded() {
             given(menuDao.selectMenuByUserSeq(1L)).willReturn(List.of(
-                    row(99, 999, "고아노드", "/orphan", null, 1)  // parent 999 없음
+                    row(99L, 999L, "고아노드", "/orphan", null, 1)  // parent 999 없음
             ));
 
             List<MenuResponse> result = menuService.getMenuTree(1L);

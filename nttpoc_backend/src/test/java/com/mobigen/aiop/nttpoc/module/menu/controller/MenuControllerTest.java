@@ -68,7 +68,7 @@ class MenuControllerTest {
         });
     }
 
-    private MenuResponse leaf(int id, Integer parentId, String name, String path) {
+    private MenuResponse leaf(long id, Long parentId, String name, String path) {
         return new MenuResponse(id, parentId, name, path, "icon-nw",
                 true, false, false, true, false, false, List.of());
     }
@@ -81,9 +81,9 @@ class MenuControllerTest {
         @DisplayName("인증된 사용자 → 200 + 메뉴 트리 반환")
         void authenticated_returns200WithTree() throws Exception {
             given(menuService.getMenuTree(42L)).willReturn(List.of(
-                    new MenuResponse(1, null, "NW", null, "icon-nw",
+                    new MenuResponse(1L, null, "NW", null, "icon-nw",
                             false, false, false, false, false, false,
-                            List.of(leaf(3, 1, "NW 감시", "/nw/monitoring")))
+                            List.of(leaf(3L, 1L, "NW 감시", "/nw/monitoring")))
             ));
 
             mockMvc.perform(authenticatedGet("/api/menu", 42L).contentType(MediaType.APPLICATION_JSON))

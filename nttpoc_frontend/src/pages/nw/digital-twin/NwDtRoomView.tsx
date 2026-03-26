@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react';
-import { Canvas, useFrame, ThreeEvent } from '@react-three/fiber';
-import { OrbitControls, Html, Edges, Line, Grid } from '@react-three/drei';
+import { useRef, useState, useEffect } from 'react';
+import { Canvas, useFrame, useThree, ThreeEvent } from '@react-three/fiber';
+import { OrbitControls, Html, Edges, Line, Grid, MeshReflectorMaterial } from '@react-three/drei';
+import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import { ArrowLeft, ChevronRight } from 'lucide-react';
 import { AlarmLevel, ALARM_COLOR, ALARM_LABEL, Center, FloorData } from './types';
@@ -9,6 +10,15 @@ import { AlarmLevel, ALARM_COLOR, ALARM_LABEL, Center, FloorData } from './types
 const C_BG          = '#020c1e';
 const C_WIRE_BRIGHT = '#4fc3f7';
 const C_WIRE_MID    = '#1565c0';
+
+// ── 배경 텍스처 모듈 레벨 프리로드 ───────────────────────
+// 컴포넌트 마운트 전에 미리 로드 시작 → Canvas 뜰 때 바로 적용
+const BG_IMAGE = '/images/server-room-bg6.jpg';
+let _bgTexCache: THREE.Texture | null = null;
+new THREE.TextureLoader().load(BG_IMAGE, (tex) => {
+  tex.colorSpace = THREE.SRGBColorSpace;
+  _bgTexCache = tex;
+});
 
 // ── 디바이스 상태 ─────────────────────────────────────────
 type DeviceStatus = 'normal' | 'warning' | 'critical';
@@ -112,7 +122,7 @@ function PulseLight({ color, intensity }: { color: string; intensity: number }) 
   return <pointLight ref={ref} color={color} intensity={intensity} distance={3} decay={2} />;
 }
 
-// ── 랙 3D — 파란 테두리만, 선택 효과 없음 ──────────────────
+// ── 랙 3D — 투명 와이어프레임 (서버가 주인공) ───────────────
 function RackFrame({ rack, totalCols, totalRows }: {
   rack:      Rack;
   totalCols: number;
@@ -122,17 +132,17 @@ function RackFrame({ rack, totalCols, totalRows }: {
 
   return (
     <group position={[px, RACK_H / 2, pz]}>
+      {/* 어두운 반투명 fill — 배경 대비 윤곽 강조 */}
+      <mesh>
+        <boxGeometry args={[RACK_W, RACK_H, RACK_D]} />
+        <meshBasicMaterial color="#020810" transparent opacity={0.45} depthWrite={false} />
+      </mesh>
+      {/* 엣지 오버레이 */}
       <mesh>
         <boxGeometry args={[RACK_W, RACK_H, RACK_D]} />
         <meshBasicMaterial visible={false} />
-        <Edges threshold={15} color="#1a4a80" lineWidth={0.5} />
+        <Edges threshold={15} color="#0e3060" lineWidth={1.4} />
       </mesh>
-
-      <Html position={[0, RACK_H / 2 + 0.28, 0]} center distanceFactor={18} style={{ pointerEvents: 'none' }}>
-        <span style={{ fontFamily: 'monospace', fontSize: '6px', color: '#1e3a55', userSelect: 'none', whiteSpace: 'nowrap' }}>
-          {rack.id}
-        </span>
-      </Html>
 
       {rack.devices.some((d) => d.status === 'critical') && (
         <group position={[0, RACK_H / 2 + 0.3, 0]}>
@@ -167,14 +177,15 @@ function DeviceAlarmPulse({ color }: { color: string }) {
 }
 
 // ── 디바이스 3D — 개별 선택 가능 ─────────────────────────
-function DeviceSlot3D({ device, rackRow, rackCol, totalCols, totalRows, isSelected, onSelect }: {
-  device:     Device;
-  rackRow:    number;
-  rackCol:    number;
-  totalCols:  number;
-  totalRows:  number;
-  isSelected: boolean;
-  onSelect:   () => void;
+function DeviceSlot3D({ device, rackRow, rackCol, totalCols, totalRows, isSelected, onSelect, deviceTexture }: {
+  device:        Device;
+  rackRow:       number;
+  rackCol:       number;
+  totalCols:     number;
+  totalRows:     number;
+  isSelected:    boolean;
+  onSelect:      () => void;
+  deviceTexture: THREE.Texture | null;
 }) {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -216,10 +227,13 @@ function DeviceSlot3D({ device, rackRow, rackCol, totalCols, totalRows, isSelect
         </mesh>
       )}
 
-      {/* 디바이스 엣지 */}
+      {/* 디바이스 — 텍스처 + 엣지 오버레이 */}
       <mesh>
         <boxGeometry args={[RACK_W * 0.86, DEV_H * 0.80, RACK_D * 0.68]} />
-        <meshBasicMaterial visible={false} />
+        {deviceTexture
+          ? <meshStandardMaterial map={deviceTexture} roughness={0.70} metalness={0.20} />
+          : <meshBasicMaterial color="#0a1828" />
+        }
         <Edges threshold={15} color={currentEdge} lineWidth={currentWidth} />
       </mesh>
 
@@ -332,9 +346,22 @@ function RoomEnvironment({ roomW, roomD }: { roomW: number; roomD: number }) {
 
   return (
     <group>
+      {/* 반사 바닥 */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
         <planeGeometry args={[roomW, roomD]} />
-        <meshBasicMaterial color="#061828" transparent opacity={0.85} />
+        <MeshReflectorMaterial
+          blur={[400, 120]}
+          resolution={512}
+          mixBlur={1.2}
+          mixStrength={55}
+          roughness={0.85}
+          depthScale={1.3}
+          minDepthThreshold={0.3}
+          maxDepthThreshold={1.5}
+          color="#061828"
+          metalness={0.6}
+          mirror={0}
+        />
       </mesh>
       <Grid
         position={[0, 0.002, 0]}
@@ -359,6 +386,32 @@ function RoomEnvironment({ roomW, roomD }: { roomW: number; roomD: number }) {
   );
 }
 
+// ── 서버룸 배경 이미지 ────────────────────────────────────
+function RoomBackground() {
+  const { scene } = useThree();
+  useEffect(() => {
+    const apply = (tex: THREE.Texture) => {
+      scene.background = tex;
+      scene.backgroundIntensity = 0.30;
+    };
+    // 이미 캐시된 경우 즉시 적용, 아니면 로드 완료 후 적용
+    if (_bgTexCache) {
+      apply(_bgTexCache);
+    } else {
+      new THREE.TextureLoader().load(BG_IMAGE, (tex) => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        _bgTexCache = tex;
+        apply(tex);
+      });
+    }
+    return () => {
+      scene.background = null;
+      scene.backgroundIntensity = 1;
+    };
+  }, [scene]);
+  return null;
+}
+
 // ── 3D 씬 ─────────────────────────────────────────────────
 function RoomScene({ racks, cols, rows, selectedDeviceId, onDeviceSelect }: {
   racks:           Rack[];
@@ -370,9 +423,17 @@ function RoomScene({ racks, cols, rows, selectedDeviceId, onDeviceSelect }: {
   const roomW = cols * RACK_SPACING_X + 4;
   const roomD = rows * RACK_SPACING_Z + 4;
 
+  const [deviceTexture, setDeviceTexture] = useState<THREE.Texture | null>(null);
+
+  useEffect(() => {
+    const loader = new THREE.TextureLoader();
+    loader.load('/images/server-blade.jpg', (tex) => { tex.colorSpace = THREE.SRGBColorSpace; setDeviceTexture(tex); });
+  }, []);
+
   return (
     <>
-      <ambientLight intensity={0.12} color="#0e2d45" />
+      <RoomBackground />
+      <ambientLight intensity={0.35} color="#1a4a6a" />
       <pointLight position={[0, 6, 0]} color={C_WIRE_BRIGHT} intensity={0.5} distance={25} decay={1.5} />
 
       <RoomEnvironment roomW={roomW} roomD={roomD} />
@@ -391,6 +452,7 @@ function RoomScene({ racks, cols, rows, selectedDeviceId, onDeviceSelect }: {
               totalRows={rows}
               isSelected={dev.id === selectedDeviceId}
               onSelect={() => onDeviceSelect(dev.id)}
+              deviceTexture={deviceTexture}
             />
           ))}
         </group>
@@ -405,6 +467,16 @@ function RoomScene({ racks, cols, rows, selectedDeviceId, onDeviceSelect }: {
         enableDamping
         dampingFactor={0.06}
       />
+
+      {/* Bloom 글로우 */}
+      <EffectComposer>
+        <Bloom
+          luminanceThreshold={0.08}
+          intensity={1.8}
+          radius={0.9}
+          mipmapBlur
+        />
+      </EffectComposer>
     </>
   );
 }
@@ -418,7 +490,7 @@ function DeviceInfoPanel({ device, rackId }: { device: Device | null; rackId: st
   return (
     <div
       className="shrink-0 mx-4 mb-3 rounded-xl border px-4 py-2.5"
-      style={{ borderColor: border, backgroundColor: device ? `${col}08` : 'transparent', minHeight: '52px' }}
+      style={{ borderColor: border, backgroundColor: device ? `${col}08` : 'transparent', height: '52px', overflow: 'hidden' }}
     >
       {device ? (
         <div className="flex items-center gap-3">
@@ -490,7 +562,7 @@ export default function NwDtRoomView({ center, floor, onBack }: Props) {
       <div className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 border-b border-slate-800/60 text-xs">
         <button
           onClick={onBack}
-          className="flex items-center gap-1 text-slate-500 hover:text-cyan-400 transition-colors"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-800 border border-slate-600/70 text-slate-300 hover:text-cyan-300 hover:border-cyan-500/60 hover:bg-slate-700 transition-all"
         >
           <ArrowLeft className="size-3.5" />
           빌딩
@@ -509,9 +581,10 @@ export default function NwDtRoomView({ center, floor, onBack }: Props) {
       {/* 3D 캔버스 */}
       <div className="flex-1 min-h-0 mx-4 my-2 rounded-xl overflow-hidden border border-slate-800/40">
         <Canvas
-          camera={{ position: [camDist, camDist * 0.7, camDist], fov: 50 }}
-          gl={{ antialias: true, alpha: false }}
+          camera={{ position: [camDist * 0.25, camDist * 0.65, camDist * 1.15], fov: 50 }}
+          gl={{ antialias: true, alpha: false, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.2 }}
           style={{ background: C_BG }}
+          onPointerMissed={() => setSelectedDeviceId(null)}
         >
           <RoomScene
             racks={racks}

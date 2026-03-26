@@ -24,8 +24,8 @@ export interface Center {
 }
 
 export const CENTERS: Center[] = [
-  { name: '品川 NOC',    value: [139.7372, 35.6333, 0], level: 'NR', desc: '동일본 담당 시나가와 NOC | 東日本 担当 · メインNOC (港区港南2-1-65)' },
   { name: '大阪南港 NOC', value: [135.4210, 34.6407, 0], level: 'MJ', desc: '서일본 담당 오사카난코 NOC | 西日本 担当 · バックアップNOC (住之江区南港北1-9-9)' },
+  { name: '品川 NOC',    value: [139.7372, 35.6333, 0], level: 'NR', desc: '동일본 담당 시나가와 NOC | 東日本 担当 · メインNOC (港区港南2-1-65)' },
 ];
 
 // ── 빌딩 층 데이터 ───────────────────────────────────────
