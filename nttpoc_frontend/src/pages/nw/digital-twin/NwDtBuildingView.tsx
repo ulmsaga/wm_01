@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Canvas, useFrame, useThree, ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, Html, Edges, MeshReflectorMaterial } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
@@ -111,6 +112,9 @@ function Floor3D({
   index:   number;
   onClick: () => void;
 }) {
+  const { t } = useTranslation('nw');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const floorName = (t as (k: string, o: object) => string)(`nwDt.building.floor.${data.id}`, { defaultValue: data.name });
   const [isHovered, setIsHovered] = useState(false);
   const isAlarm  = data.level !== 'NR';
   const hexColor = ALARM_COLOR[data.level];
@@ -232,7 +236,7 @@ function Floor3D({
               {data.id}
             </span>
             <span style={{ fontSize: '10px', color: '#94a3b8', fontFamily: 'sans-serif' }}>
-              {data.name}
+              {floorName}
             </span>
             <span style={{
               fontSize: '9px', fontWeight: 700,
@@ -360,6 +364,7 @@ interface Props {
 }
 
 export default function NwDtBuildingView({ center, onBack }: Props) {
+  const { t } = useTranslation('nw');
   const [selectedFloor, setSelectedFloor] = useState<string | null>(null);
   const [view, setView] = useState<'building' | 'room'>('building');
 
@@ -400,7 +405,7 @@ export default function NwDtBuildingView({ center, onBack }: Props) {
           className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-800 border border-slate-600/70 text-slate-300 hover:text-cyan-300 hover:border-cyan-500/60 hover:bg-slate-700 transition-all"
         >
           <ArrowLeft className="size-3.5" />
-          지도
+          {t('nwDt.building.backToMap')}
         </button>
         <ChevronRight className="size-3 text-slate-700" />
         <span className="text-slate-300 font-medium">{center.name}</span>

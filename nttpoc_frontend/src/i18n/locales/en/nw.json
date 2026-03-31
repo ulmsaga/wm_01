@@ -44,6 +44,50 @@
       "loss": "Packet Loss"
     }
   },
+  "nwDt": {
+    "header": {
+      "viewMap": "Map",
+      "viewBuilding": "Building"
+    },
+    "kpi": {
+      "attempted": "Attempted",
+      "successful": "Successful",
+      "attemptedUsers": "Attempted Users"
+    },
+    "map": {
+      "loading": "Loading map...",
+      "clickToBuilding": "Click to view building"
+    },
+    "building": {
+      "backToMap": "Map",
+      "floor": {
+        "1F": "Lobby",
+        "2F": "Management Room",
+        "3F": "Telecom Equipment Room",
+        "4F": "Backup Center",
+        "5F": "Data Center",
+        "6F": "Telecom Facility Room",
+        "7F": "Network Equipment Room",
+        "8F": "Equipment Room A",
+        "9F": "Equipment Room B",
+        "10F": "Network Monitoring Center",
+        "11F": "Meeting Room A",
+        "12F": "Meeting Room B",
+        "13F": "Training Room",
+        "14F": "IT Systems Dept.",
+        "15F": "Technical Division"
+      }
+    },
+    "room": {
+      "backToBuilding": "Building",
+      "normalOperation": "Operating normally",
+      "alarm": {
+        "status": "Status",
+        "value": "Value",
+        "consecutive": "Consecutive"
+      }
+    }
+  },
   "digitalTwin": {
     "title": "Equipment Room Digital Twin",
     "layoutTitle": "Equipment Room Server Layout",

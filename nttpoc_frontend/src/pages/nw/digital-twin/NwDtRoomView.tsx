@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Canvas, useFrame, useThree, ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, Html, Edges, Line, Grid, MeshReflectorMaterial } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
@@ -203,6 +204,7 @@ function DeviceSlot3D({ device, rackRow, rackCol, totalCols, totalRows, isSelect
   onSelect:      () => void;
   deviceTexture: THREE.Texture | null;
 }) {
+  const { t } = useTranslation('nw');
   const [isHovered, setIsHovered] = useState(false);
 
   const [px, , pz] = rackPos(rackRow, rackCol, totalCols, totalRows);
@@ -331,11 +333,11 @@ function DeviceSlot3D({ device, rackRow, rackCol, totalCols, totalRows, isSelect
               {isAlarm ? (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px 14px' }}>
                   {([
-                    { label: 'CALL TYPE',  value: 'ATTACH' },
-                    { label: 'KPI',        value: '성공율'  },
-                    { label: '상태',        value: '낮음'   },
-                    { label: '값',          value: '40%'   },
-                    { label: '연속발생',     value: '5회'   },
+                    { label: 'CALL TYPE',                       value: 'ATTACH' },
+                    { label: 'KPI',                             value: '成功率'  },
+                    { label: t('nwDt.room.alarm.status'),       value: '低い'   },
+                    { label: t('nwDt.room.alarm.value'),        value: '40%'   },
+                    { label: t('nwDt.room.alarm.consecutive'),  value: '5回'   },
                   ] as { label: string; value: string }[]).map(({ label, value }) => (
                     <div key={label}>
                       <div style={{ fontSize: '8px', color: '#475569', marginBottom: '1px', fontFamily: 'monospace' }}>{label}</div>
@@ -345,7 +347,7 @@ function DeviceSlot3D({ device, rackRow, rackCol, totalCols, totalRows, isSelect
                 </div>
               ) : (
                 <div style={{ fontSize: '10px', color: ALARM_COLOR['NR'], fontFamily: 'monospace' }}>
-                  ● 정상 운용 중
+                  ● {t('nwDt.room.normalOperation')}
                 </div>
               )}
             </div>
@@ -503,6 +505,7 @@ function RoomScene({ racks, cols, rows, selectedDeviceId, onDeviceSelect }: {
 
 // ── 하단 정보 패널 ────────────────────────────────────────
 function DeviceInfoPanel({ device, rackId }: { device: Device | null; rackId: string | null }) {
+  const { t } = useTranslation('nw');
   const level  = device ? deviceStatusToAlarmLevel(device.status) : 'NR';
   const col    = device ? deviceStatusColor(device.status) : '#1e293b';
   const border = device ? `${col}50` : '#1e293b';
@@ -539,10 +542,10 @@ function DeviceInfoPanel({ device, rackId }: { device: Device | null; rackId: st
           {/* 알람 상세 — 추후 SSE 연동 후 실데이터로 교체 */}
           <div className="flex-1 grid grid-cols-4 gap-2 min-w-0">
             {[
-              { label: 'CALL TYPE', value: device.status !== 'normal' ? 'ATTACH' : '—' },
-              { label: 'KPI',       value: device.status !== 'normal' ? '성공율' : '—' },
-              { label: '상태',       value: device.status !== 'normal' ? '낮음'  : '—' },
-              { label: '연속발생',   value: device.status !== 'normal' ? '5회'   : '—' },
+              { label: 'CALL TYPE',                          value: device.status !== 'normal' ? 'ATTACH' : '—' },
+              { label: 'KPI',                                value: device.status !== 'normal' ? '成功率' : '—' },
+              { label: t('nwDt.room.alarm.status'),          value: device.status !== 'normal' ? '低い'  : '—' },
+              { label: t('nwDt.room.alarm.consecutive'),     value: device.status !== 'normal' ? '5回'   : '—' },
             ].map(({ label, value }) => (
               <div key={label} className="flex flex-col gap-0.5">
                 <span className="text-[9px] text-slate-500 uppercase tracking-wide">{label}</span>
@@ -566,6 +569,9 @@ interface Props {
 }
 
 export default function NwDtRoomView({ center, floor, onBack }: Props) {
+  const { t } = useTranslation('nw');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const floorName = (t as (k: string, o: object) => string)(`nwDt.building.floor.${floor.id}`, { defaultValue: floor.name });
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const { racks, cols } = generateRacks(center, floor);
   const rows = Math.ceil(racks.length / cols);
@@ -585,14 +591,14 @@ export default function NwDtRoomView({ center, floor, onBack }: Props) {
           className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-800 border border-slate-600/70 text-slate-300 hover:text-cyan-300 hover:border-cyan-500/60 hover:bg-slate-700 transition-all"
         >
           <ArrowLeft className="size-3.5" />
-          빌딩
+          {t('nwDt.room.backToBuilding')}
         </button>
         <ChevronRight className="size-3 text-slate-700" />
         <span className="text-slate-400">{center.name}</span>
         <ChevronRight className="size-3 text-slate-700" />
         <span className="font-mono" style={{ color: C_WIRE_BRIGHT }}>{floor.id}</span>
         <ChevronRight className="size-3 text-slate-700" />
-        <span className="text-slate-300 font-medium">{floor.name}</span>
+        <span className="text-slate-300 font-medium">{floorName}</span>
         <span className="ml-auto font-mono text-[10px] text-slate-500">
           RACK × {racks.length}&nbsp;|&nbsp;{floor.id === '8F' ? 'MME' : 'SGW'} × {floor.id === '8F' ? 30 : 60}
         </span>

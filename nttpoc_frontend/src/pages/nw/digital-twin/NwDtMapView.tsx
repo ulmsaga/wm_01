@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import ReactECharts from 'echarts-for-react';
 import * as echarts from 'echarts';
 import { AlarmLevel, ALARM_COLOR, ALARM_LABEL, Center, CENTERS } from './types';
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export default function NwDtMapView({ onSelectCenter }: Props) {
+  const { t } = useTranslation('nw');
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -68,7 +70,7 @@ export default function NwDtMapView({ onSelectCenter }: Props) {
           `<span style="font-weight:600;color:${color}">${name}</span>`,
           `<span style="color:#94a3b8">${desc}</span>`,
           `<span style="color:${color}">● ${ALARM_LABEL[level]}</span>`,
-          `<span style="color:#475569;font-size:10px">클릭하여 빌딩 보기</span>`,
+          `<span style="color:#475569;font-size:10px">${t('nwDt.map.clickToBuilding')}</span>`,
         ].join('<br/>');
       },
     },
@@ -102,7 +104,7 @@ export default function NwDtMapView({ onSelectCenter }: Props) {
   if (!ready) {
     return (
       <div className="flex items-center justify-center h-full text-slate-600 text-sm">
-        지도 로딩 중...
+        {t('nwDt.map.loading')}
       </div>
     );
   }

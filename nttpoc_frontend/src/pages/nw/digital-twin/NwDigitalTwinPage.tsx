@@ -1,20 +1,12 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Clock, Map } from 'lucide-react';
 import { Center, CENTERS, ALARM_COLOR, ALARM_LABEL } from './types';
 import NwDtMapView from './NwDtMapView';
 import NwDtBuildingView from './NwDtBuildingView';
 
-// ── KPI 데이터 (TODO: SSE 연동 후 서버값으로 교체) ────────
-interface KpiItem {
-  label: string;
-  value: number;
-}
-
-const KPI_DATA: KpiItem[] = [
-  { label: '시도호',        value: 6_600_371 },
-  { label: '성공호',        value: 6_516_457 },
-  { label: '시도호 이용자', value: 7_017_834 },
-];
+// ── KPI 값 (TODO: SSE 연동 후 서버값으로 교체) ────────────
+const KPI_VALUES = [6_600_371, 6_516_457, 7_017_834] as const;
 
 function fmtNumber(n: number) {
   return n.toLocaleString('ja-JP');
@@ -79,6 +71,7 @@ function NocCard({ center }: { center: Center }) {
 type View = 'map' | 'building';
 
 export default function NwDigitalTwinPage() {
+  const { t } = useTranslation('nw');
   const [view, setView]                   = useState<View>('map');
   const [selectedCenter, setSelectedCenter] = useState<Center | null>(null);
   // TODO: SSE 연동 후 서버에서 받은 EVENT_TIME으로 교체
@@ -113,7 +106,7 @@ export default function NwDigitalTwinPage() {
         </span>
         <span className="flex items-center gap-1.5 text-xs font-semibold tracking-widest text-cyan-400 uppercase">
           <Map className="size-3.5" />
-          NW Digital Twin / {view === 'map' ? '지도' : '빌딩'}
+          NW Digital Twin / {view === 'map' ? t('nwDt.header.viewMap') : t('nwDt.header.viewBuilding')}
         </span>
         <div className="ml-auto flex items-center gap-1.5 text-xs text-slate-400">
           <Clock className="size-3.5 text-slate-500" />
@@ -129,13 +122,17 @@ export default function NwDigitalTwinPage() {
 
           {/* 상단: KPI 카드 */}
           <div className="shrink-0 flex gap-3 p-3 border-b border-slate-800">
-            {KPI_DATA.map((kpi) => (
+            {([
+              { key: 'attempted',      value: KPI_VALUES[0] },
+              { key: 'successful',     value: KPI_VALUES[1] },
+              { key: 'attemptedUsers', value: KPI_VALUES[2] },
+            ] as const).map((kpi) => (
               <div
-                key={kpi.label}
+                key={kpi.key}
                 className="flex-1 flex items-center justify-between gap-3 bg-slate-900/80 rounded-xl border border-slate-700/60 px-4 py-3"
               >
                 <span className="text-base font-semibold text-slate-300 tracking-wide whitespace-nowrap">
-                  {kpi.label}
+                  {t(`nwDt.kpi.${kpi.key}`)}
                 </span>
                 <span className="text-2xl font-bold text-slate-100 tabular-nums">
                   {fmtNumber(kpi.value)}

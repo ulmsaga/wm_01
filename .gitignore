@@ -3,3 +3,4 @@
 wm_frontend/.env
 wm_frontend/.env.local
 wm_frontend/.env.*.local
+.DS_Store

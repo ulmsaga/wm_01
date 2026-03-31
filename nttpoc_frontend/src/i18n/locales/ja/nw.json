@@ -44,6 +44,50 @@
       "loss": "パケットロス"
     }
   },
+  "nwDt": {
+    "header": {
+      "viewMap": "地図",
+      "viewBuilding": "ビル"
+    },
+    "kpi": {
+      "attempted": "試呼",
+      "successful": "成功呼",
+      "attemptedUsers": "試呼利用者"
+    },
+    "map": {
+      "loading": "地図を読み込み中...",
+      "clickToBuilding": "クリックしてビルを表示"
+    },
+    "building": {
+      "backToMap": "地図",
+      "floor": {
+        "1F": "ロビー・案内",
+        "2F": "管理・運用室",
+        "3F": "通信機器室",
+        "4F": "バックアップセンター",
+        "5F": "データセンター",
+        "6F": "電気通信設備室",
+        "7F": "ネットワーク機器室",
+        "8F": "機器室 A",
+        "9F": "機器室 B",
+        "10F": "ネットワーク監視センター",
+        "11F": "会議室 A",
+        "12F": "会議室 B",
+        "13F": "研修室",
+        "14F": "情報システム部",
+        "15F": "技術統括部"
+      }
+    },
+    "room": {
+      "backToBuilding": "ビル",
+      "normalOperation": "正常稼働中",
+      "alarm": {
+        "status": "状態",
+        "value": "値",
+        "consecutive": "連続発生"
+      }
+    }
+  },
   "digitalTwin": {
     "title": "機器室 デジタルツイン",
     "layoutTitle": "機器室 サーバーレイアウト",

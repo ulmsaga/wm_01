@@ -44,6 +44,50 @@
       "loss": "패킷 손실"
     }
   },
+  "nwDt": {
+    "header": {
+      "viewMap": "지도",
+      "viewBuilding": "빌딩"
+    },
+    "kpi": {
+      "attempted": "시도호",
+      "successful": "성공호",
+      "attemptedUsers": "시도호 이용자"
+    },
+    "map": {
+      "loading": "지도 로딩 중...",
+      "clickToBuilding": "클릭하여 빌딩 보기"
+    },
+    "building": {
+      "backToMap": "지도",
+      "floor": {
+        "1F": "로비·안내",
+        "2F": "관리·운용실",
+        "3F": "통신기기실",
+        "4F": "백업센터",
+        "5F": "데이터센터",
+        "6F": "전기통신설비실",
+        "7F": "네트워크기기실",
+        "8F": "장비실 A",
+        "9F": "장비실 B",
+        "10F": "네트워크 감시센터",
+        "11F": "회의실 A",
+        "12F": "회의실 B",
+        "13F": "연수실",
+        "14F": "정보시스템부",
+        "15F": "기술통괄부"
+      }
+    },
+    "room": {
+      "backToBuilding": "빌딩",
+      "normalOperation": "정상 운용 중",
+      "alarm": {
+        "status": "상태",
+        "value": "값",
+        "consecutive": "연속발생"
+      }
+    }
+  },
   "digitalTwin": {
     "title": "장비실 디지털 트윈",
     "layoutTitle": "장비실 서버 레이아웃",
